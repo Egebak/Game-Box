@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="TankArenaSmoke.cs" />
+    <Compile Remove="LauncherSmoke.cs" />
+    <Compile Remove="ConstructionSmoke.cs" />
+    <Compile Include="../Core/MiniGameDefinition.cs" Link="MiniGameDefinition.cs" />
+    <Compile Include="../Core/MiniGameRegistry.cs" Link="MiniGameRegistry.cs" />
+    <Compile Include="../Core/GameBoxState.cs" Link="GameBoxState.cs" />
+    <Compile Include="../Games/TankArena/Scripts/CombatRules.cs" Link="CombatRules.cs" />
+    <Compile Include="../Games/ConstructionSite/Scripts/ConstructionMission.cs" Link="ConstructionMission.cs" />
+  </ItemGroup>
+</Project>

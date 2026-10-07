@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Games/ConstructionSite/Scripts/ConstructionSite.cs" id="1"]
+
+[node name="ConstructionSite" type="Node3D"]
+script = ExtResource("1")
