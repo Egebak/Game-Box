@@ -8,6 +8,7 @@
     <Compile Remove="TankArenaSmoke.cs" />
     <Compile Remove="LauncherSmoke.cs" />
     <Compile Remove="ConstructionSmoke.cs" />
+    <Compile Remove="NamePromptSmoke.cs" />
     <Compile Include="../Core/MiniGameDefinition.cs" Link="MiniGameDefinition.cs" />
     <Compile Include="../Core/MiniGameRegistry.cs" Link="MiniGameRegistry.cs" />
     <Compile Include="../Core/GameBoxState.cs" Link="GameBoxState.cs" />

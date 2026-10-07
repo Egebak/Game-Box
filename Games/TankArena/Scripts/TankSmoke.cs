@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace ChristiansSpilBox.Games.TankArena;
+namespace GameBox.Games.TankArena;
 
 public partial class TankSmoke : Node3D
 {

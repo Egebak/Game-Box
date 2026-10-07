@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
-using ChristiansSpilBox.Core;
-using ChristiansSpilBox.Games.ConstructionSite;
-using ChristiansSpilBox.Shared.Audio;
+using GameBox.Core;
+using GameBox.Games.ConstructionSite;
+using GameBox.Shared.Audio;
 using Godot;
 
 public partial class ConstructionSmoke : Node

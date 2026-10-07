@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using ChristiansSpilBox.Core;
-using ChristiansSpilBox.Shared.Audio;
-using ChristiansSpilBox.Shared.UI;
+using GameBox.Core;
+using GameBox.Shared.Audio;
+using GameBox.Shared.UI;
 using Godot;
 
-namespace ChristiansSpilBox.Games.ConstructionSite;
+namespace GameBox.Games.ConstructionSite;
 
 public partial class ConstructionSite : Node3D
 {
@@ -359,17 +359,17 @@ public partial class ConstructionSite : Node3D
         _modeOverlay = MakeOverlay(canvas, "Gravemaskine-plads", false);
         AddOverlayButton(_modeOverlay, "Opgave: Fyld lastbilen", () => StartMode(false));
         AddOverlayButton(_modeOverlay, "Fri leg", () => StartMode(true));
-        AddOverlayButton(_modeOverlay, "Tilbage til Spil Box", ReturnToBox);
+        AddOverlayButton(_modeOverlay, "Tilbage til Game Box", ReturnToBox);
         _modeOverlay.Visible = true;
 
         _pauseOverlay = MakeOverlay(canvas, "Pause", true);
         AddOverlayButton(_pauseOverlay, "Fortsæt", Resume);
         AddOverlayButton(_pauseOverlay, "Spil igen", Restart);
-        AddOverlayButton(_pauseOverlay, "Tilbage til Spil Box", ReturnToBox);
+        AddOverlayButton(_pauseOverlay, "Tilbage til Game Box", ReturnToBox);
 
         _successOverlay = MakeOverlay(canvas, "Færdig!", true);
         AddOverlayButton(_successOverlay, "Spil igen", Restart);
-        AddOverlayButton(_successOverlay, "Tilbage til Spil Box", ReturnToBox);
+        AddOverlayButton(_successOverlay, "Tilbage til Game Box", ReturnToBox);
     }
 
     private static Control MakeOverlay(CanvasLayer canvas, string title, bool dark)

@@ -1,6 +1,6 @@
 using System;
 
-namespace ChristiansSpilBox.Games.ConstructionSite;
+namespace GameBox.Games.ConstructionSite;
 
 public enum DumpResult { Empty, Ground, Truck, Completed }
 

@@ -1,4 +1,4 @@
-namespace ChristiansSpilBox.Games.TankArena;
+namespace GameBox.Games.TankArena;
 
 public sealed class TankTuning
 {

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace ChristiansSpilBox.Shared.Audio;
+namespace GameBox.Shared.Audio;
 
 public static class SoundEffects
 {

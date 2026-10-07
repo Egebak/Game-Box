@@ -1,8 +1,8 @@
 using System;
 using System.IO;
-using ChristiansSpilBox.Core;
-using ChristiansSpilBox.Games.TankArena;
-using ChristiansSpilBox.Games.ConstructionSite;
+using GameBox.Core;
+using GameBox.Games.TankArena;
+using GameBox.Games.ConstructionSite;
 
 var count = 0;
 void Check(bool condition, string name)
@@ -52,14 +52,20 @@ Check(registry.Get("construction-site").ScenePath.EndsWith("ConstructionSite.tsc
 try { registry.Register(registry.Get("tank-arena")); throw new Exception("Duplicate was accepted"); }
 catch (ArgumentException) { Check(true, "duplicate minigame is rejected"); }
 
-var savePath = Path.Combine(Path.GetTempPath(), "christians-game-box-tests", "state.json");
+var savePath = Path.Combine(Path.GetTempPath(), "game-box-tests", "state.json");
 Check(!GameBoxState.Load(savePath).TankArenaCompleted, "missing save defaults safely");
 var state = new GameBoxState { TankArenaCompleted = true };
+Check(!state.HasChildName && !state.TrySetChildName("  "), "blank child name is rejected");
+Check(!state.TrySetChildName(new string('a', 25)), "overlong child name is rejected");
+Check(state.TrySetChildName("  Alex  ") && state.ChildName == "Alex", "child name is trimmed");
 state.ConstructionSiteCompleted = true;
 state.Save(savePath);
+Check(GameBoxState.Load(savePath).ChildName == "Alex", "child name persists locally");
 Check(GameBoxState.Load(savePath).TankArenaCompleted, "completion round trips through save file");
 Check(GameBoxState.Load(savePath).ConstructionSiteCompleted, "construction completion uses shared save file");
 Check(!GameBoxState.FromJson("not json").TankArenaCompleted, "invalid save defaults safely");
+Check(!GameBoxState.FromJson("{\"TankArenaCompleted\":true}").HasChildName,
+    "older saves ask for a name while retaining progress");
 var mission = new ConstructionMission(8, 3);
 Check(mission.TryDig() && mission.BucketLoaded && mission.SoilRemaining == 2, "dig moves one load into bucket");
 Check(!mission.TryDig(), "full bucket cannot dig twice");

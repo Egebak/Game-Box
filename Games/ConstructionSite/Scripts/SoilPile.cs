@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace ChristiansSpilBox.Games.ConstructionSite;
+namespace GameBox.Games.ConstructionSite;
 
 public partial class SoilPile : Node3D
 {

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace ChristiansSpilBox.Games.ConstructionSite;
+namespace GameBox.Games.ConstructionSite;
 
 public partial class ExcavatorArm : Node3D
 {

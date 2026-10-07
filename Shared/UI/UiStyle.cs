@@ -1,6 +1,6 @@
 using Godot;
 
-namespace ChristiansSpilBox.Shared.UI;
+namespace GameBox.Shared.UI;
 
 public static class UiStyle
 {

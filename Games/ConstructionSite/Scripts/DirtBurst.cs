@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace ChristiansSpilBox.Games.ConstructionSite;
+namespace GameBox.Games.ConstructionSite;
 
 public partial class DirtBurst : Node3D
 {

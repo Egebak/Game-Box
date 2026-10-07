@@ -1,7 +1,7 @@
-using ChristiansSpilBox.Shared.Audio;
+using GameBox.Shared.Audio;
 using Godot;
 
-namespace ChristiansSpilBox.Games.ConstructionSite;
+namespace GameBox.Games.ConstructionSite;
 
 public partial class Excavator : Node3D
 {

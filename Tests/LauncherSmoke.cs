@@ -1,8 +1,9 @@
 using System;
+using System.IO;
 using System.Linq;
-using ChristiansSpilBox.Core;
-using ChristiansSpilBox.Games.ConstructionSite;
-using ChristiansSpilBox.Games.TankArena;
+using GameBox.Core;
+using GameBox.Games.ConstructionSite;
+using GameBox.Games.TankArena;
 using Godot;
 
 public partial class LauncherSmoke : Node
@@ -12,8 +13,18 @@ public partial class LauncherSmoke : Node
     private async void Run()
     {
         var tree = GetTree();
+        var savePath = ProjectSettings.GlobalizePath("user://game_box_state.json");
+        var previousSave = File.Exists(savePath) ? File.ReadAllText(savePath) : null;
+        void RestoreSave()
+        {
+            if (previousSave is null) File.Delete(savePath);
+            else File.WriteAllText(savePath, previousSave);
+        }
         try
         {
+            var testState = GameBoxState.Load(savePath);
+            testState.TrySetChildName("Test");
+            testState.Save(savePath);
             var menu = GD.Load<PackedScene>("res://Core/MainMenu.tscn").Instantiate<MainMenu>();
             AddChild(menu);
             await ToSignal(tree, SceneTree.SignalName.ProcessFrame);
@@ -47,7 +58,7 @@ public partial class LauncherSmoke : Node
                             try
                             {
                                 Check(tree.Paused, "construction ESC opens pause menu");
-                                var action = constructionLaunches == 1 ? "Spil igen" : "Tilbage til Spil Box";
+                                var action = constructionLaunches == 1 ? "Spil igen" : "Tilbage til Game Box";
                                 if (constructionLaunches > 1) returnedFromConstruction = true;
                                 construction.FindChildren("*", "Button", true, false).OfType<Button>()
                                     .Single(x => x.Text == action && x.IsVisibleInTree())
@@ -56,6 +67,7 @@ public partial class LauncherSmoke : Node
                             catch (Exception error)
                             {
                                 GD.PushError($"LAUNCHER_SMOKE_FAIL: {error}");
+                                RestoreSave();
                                 tree.Quit(1);
                             }
                         }
@@ -73,7 +85,7 @@ public partial class LauncherSmoke : Node
                             try
                             {
                                 Check(tree.Paused, "pause opens from launched game");
-                                var action = launches == 1 ? "Spil igen" : "Tilbage til Spil Box";
+                                var action = launches == 1 ? "Spil igen" : "Tilbage til Game Box";
                                 var button = arena.FindChildren("*", "Button", true, false).OfType<Button>()
                                     .Single(x => x.Text == action && x.IsVisibleInTree());
                                 button.EmitSignal(BaseButton.SignalName.Pressed);
@@ -81,6 +93,7 @@ public partial class LauncherSmoke : Node
                             catch (Exception error)
                             {
                                 GD.PushError($"LAUNCHER_SMOKE_FAIL: {error}");
+                                RestoreSave();
                                 tree.Quit(1);
                             }
                         }
@@ -88,7 +101,7 @@ public partial class LauncherSmoke : Node
                     }
                     else if (scene is MainMenu)
                     {
-                        Check(!tree.Paused, "return clears pause and reopens Spil Box");
+                        Check(!tree.Paused, "return clears pause and reopens Game Box");
                         if (returnedFromConstruction && launches == 0)
                         {
                             var tankTile = scene.FindChildren("*", "Button", true, false).OfType<Button>()
@@ -100,6 +113,7 @@ public partial class LauncherSmoke : Node
                             tree.CreateTimer(1.6).Timeout += () =>
                             {
                                 GD.Print("LAUNCHER_SMOKE_PASS");
+                                RestoreSave();
                                 tree.Quit(0);
                             };
                         }
@@ -108,6 +122,7 @@ public partial class LauncherSmoke : Node
                 catch (Exception error)
                 {
                     GD.PushError($"LAUNCHER_SMOKE_FAIL: {error}");
+                    RestoreSave();
                     tree.Quit(1);
                 }
             };
@@ -116,6 +131,7 @@ public partial class LauncherSmoke : Node
         catch (Exception error)
         {
             GD.PushError($"LAUNCHER_SMOKE_FAIL: {error}");
+            RestoreSave();
             tree.Quit(1);
         }
     }

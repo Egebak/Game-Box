@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
-using ChristiansSpilBox.Core;
-using ChristiansSpilBox.Shared.Audio;
-using ChristiansSpilBox.Shared.UI;
+using GameBox.Core;
+using GameBox.Shared.Audio;
+using GameBox.Shared.UI;
 using Godot;
 
-namespace ChristiansSpilBox.Games.TankArena;
+namespace GameBox.Games.TankArena;
 
 public partial class TankArena : Node3D
 {
@@ -276,7 +276,7 @@ public partial class TankArena : Node3D
         SoundEffects.BindHover(again);
         again.Pressed += Restart;
         content.AddChild(again);
-        var back = UiStyle.Button("Tilbage til Spil Box", 25);
+        var back = UiStyle.Button("Tilbage til Game Box", 25);
         SoundEffects.BindHover(back);
         back.Pressed += ReturnToBox;
         content.AddChild(back);

@@ -1,12 +1,14 @@
-# Christians Spil Box
+# Game Box
 
 A small game collection for a child, built with **Godot 4.6.3 .NET** and C#. The launcher offers **Tank Arena** and **Gravemaskine-plads**.
+
+On the first launch, Game Box asks for the child's name. It saves the name locally with game progress in `user://game_box_state.json` and greets the child on later launches without asking again. The name is never sent to a server.
 
 ## Run
 
 1. Open `project.godot` in the Godot 4.6.3 .NET editor.
-2. Build the C# solution in Godot, or run `dotnet build ChristiansSpilBox.csproj`.
-3. Press F6/F5 in Godot to play the current/main scene. The main scene is the Spil Box launcher.
+2. Build the C# solution in Godot, or run `dotnet build GameBox.csproj`.
+3. Press F6/F5 in Godot to play the current/main scene. The main scene is the Game Box launcher.
 
 The desktop viewport is designed at 1920×1080 and opens in a 1280×720 window. UI uses containers and stretches with the window.
 
@@ -20,7 +22,7 @@ The desktop viewport is designed at 1920×1080 and opens in a 1280×720 window. 
 | Fire | Left mouse button |
 | Pause / resume | Esc |
 
-The pause screen provides resume, restart and return to the Spil Box. Destroy ten normal tanks to summon the boss; its twin cannons fire two shells together. Every destroyed tank leaves a smoking wreck. When the boss is destroyed, play continues for five seconds before the victory screen appears. Defeat and victory screens have replay and return buttons.
+The pause screen provides resume, restart and return to the Game Box. Destroy ten normal tanks to summon the boss; its twin cannons fire two shells together. Every destroyed tank leaves a smoking wreck. When the boss is destroyed, play continues for five seconds before the victory screen appears. Defeat and victory screens have replay and return buttons.
 
 The player has three shell charges. Shots can be fired 0.32 seconds apart; each charge takes 1.7 seconds to recover. At most three player shells can be in flight at once. The HUD shows ready charges and recharge progress.
 
@@ -37,7 +39,7 @@ Choose **Opgave: Fyld lastbilen** or **Fri leg** from the game's opening menu. I
 | Empty a full bucket onto the ground | Right click |
 | Pause / resume | Esc |
 
-Move close to the glowing work area before clicking. A large red circle marks the truck while the bucket holds soil; the bed turns green when the bucket is over it and ready to unload. The arm and bucket animate automatically; there are no separate hydraulic controls. The pause and success screens offer restart and return to the Spil Box.
+Move close to the glowing work area before clicking. A large red circle marks the truck while the bucket holds soil; the bed turns green when the bucket is over it and ready to unload. The arm and bucket animate automatically; there are no separate hydraulic controls. The pause and success screens offer restart and return to the Game Box.
 
 ## Structure
 
@@ -52,9 +54,9 @@ See `MINIGAME_DESIGN.md` before adding another game. The launcher reads registry
 
 ## Tests
 
-Run `dotnet run --project Tests/ChristiansSpilBox.Tests.csproj`.
+Run `dotnet run --project Tests/GameBox.Tests.csproj`.
 
-For engine-level flow checks, run `Tests/LauncherSmoke.tscn`, `Tests/TankArenaSmoke.tscn` and `Tests/ConstructionSmoke.tscn` with Godot's `--headless` option. They quit with a nonzero code on failure. The construction smoke test performs the complete eight-load mission and verifies truck departure, pause, free play and saved completion.
+For engine-level flow checks, run `Tests/LauncherSmoke.tscn`, `Tests/NamePromptSmoke.tscn`, `Tests/TankArenaSmoke.tscn` and `Tests/ConstructionSmoke.tscn` with Godot's `--headless` option. They quit with a nonzero code on failure. The name prompt check verifies first launch and later launch behavior; the construction check performs the complete eight-load mission and verifies truck departure, pause, free play and saved completion.
 
 ## Current limitations
 

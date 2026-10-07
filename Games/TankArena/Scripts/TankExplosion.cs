@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace ChristiansSpilBox.Games.TankArena;
+namespace GameBox.Games.TankArena;
 
 // A short, harmless mechanical burst. It uses only meshes and materials, so it
 // works in the test arena without a particle texture or external art package.

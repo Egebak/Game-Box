@@ -1,8 +1,8 @@
 using System;
-using ChristiansSpilBox.Shared.Audio;
+using GameBox.Shared.Audio;
 using Godot;
 
-namespace ChristiansSpilBox.Games.TankArena;
+namespace GameBox.Games.TankArena;
 
 public partial class ShellProjectile : Node3D
 {

@@ -9,5 +9,6 @@
     <Compile Include="Tests/TankArenaSmoke.cs" />
     <Compile Include="Tests/LauncherSmoke.cs" />
     <Compile Include="Tests/ConstructionSmoke.cs" />
+    <Compile Include="Tests/NamePromptSmoke.cs" />
   </ItemGroup>
 </Project>

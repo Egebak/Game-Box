@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Christians Spil Box"
+config/name="Game Box"
 run/main_scene="res://Core/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "C#", "GL Compatibility")
 
@@ -24,7 +24,7 @@ window/stretch/mode="canvas_items"
 
 [dotnet]
 
-project/assembly_name="ChristiansSpilBox"
+project/assembly_name="GameBox"
 
 [rendering]
 

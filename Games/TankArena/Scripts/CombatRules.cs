@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ChristiansSpilBox.Games.TankArena;
+namespace GameBox.Games.TankArena;
 
 public sealed class HealthModel
 {

@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using ChristiansSpilBox.Games.TankArena;
-using ChristiansSpilBox.Shared.Audio;
+using GameBox.Games.TankArena;
+using GameBox.Shared.Audio;
 using Godot;
 
 public partial class TankArenaSmoke : Node
