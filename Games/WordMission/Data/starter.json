@@ -1,0 +1,39 @@
+{
+  "sessionLength": 9,
+  "maxNewItemsPerSession": 3,
+  "instructionAudio": null,
+  "successAudio": "res://Shared/Audio/victory.wav",
+  "sounds": [
+    { "id": "sound_i", "displayCue": "iii", "audio": "res://Games/WordMission/Audio/Sounds/i.wav" },
+    { "id": "sound_s", "displayCue": "sss", "audio": "res://Games/WordMission/Audio/Sounds/s.wav" },
+    { "id": "sound_n", "displayCue": "nnn", "audio": "res://Games/WordMission/Audio/Sounds/n.wav" },
+    { "id": "sound_u", "displayCue": "uuu", "audio": "res://Games/WordMission/Audio/Sounds/u.wav" },
+    { "id": "sound_o", "displayCue": "ooo", "audio": "res://Games/WordMission/Audio/Sounds/o.wav" },
+    { "id": "sound_l", "displayCue": "lll", "audio": "res://Games/WordMission/Audio/Sounds/l.wav" },
+    { "id": "sound_m", "displayCue": "mmm", "audio": "res://Games/WordMission/Audio/Sounds/m.wav" },
+    { "id": "sound_h", "displayCue": "hhh", "audio": "res://Games/WordMission/Audio/Sounds/h.wav" }
+  ],
+  "letters": [
+    { "id": "letter_i", "uppercase": "I", "lowercase": "i", "letterName": "i", "primarySoundId": "sound_i", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/i.wav" },
+    { "id": "letter_s", "uppercase": "S", "lowercase": "s", "letterName": "es", "primarySoundId": "sound_s", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/s.wav" },
+    { "id": "letter_n", "uppercase": "N", "lowercase": "n", "letterName": "en", "primarySoundId": "sound_n", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/n.wav" },
+    { "id": "letter_u", "uppercase": "U", "lowercase": "u", "letterName": "u", "primarySoundId": "sound_u", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/u.wav" },
+    { "id": "letter_o", "uppercase": "O", "lowercase": "o", "letterName": "o", "primarySoundId": "sound_o", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/o.wav" },
+    { "id": "letter_l", "uppercase": "L", "lowercase": "l", "letterName": "el", "primarySoundId": "sound_l", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/l.wav" },
+    { "id": "letter_m", "uppercase": "M", "lowercase": "m", "letterName": "em", "primarySoundId": "sound_m", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/m.wav" },
+    { "id": "letter_h", "uppercase": "H", "lowercase": "h", "letterName": "hå", "primarySoundId": "sound_h", "stage": 1, "letterNameAudio": "res://Games/WordMission/Audio/LetterNames/h.wav" }
+  ],
+  "words": [
+    { "id": "word_is", "display": "IS", "letterIds": ["letter_i", "letter_s"], "soundIds": ["sound_i", "sound_s"], "stage": 2, "difficulty": 1, "phonetic": true, "reviewStatus": "needs-review", "visualId": "icecream", "wordAudio": "res://Games/WordMission/Audio/Words/is.wav", "activities": ["build", "choose", "gate", "tank"] },
+    { "id": "word_nu", "display": "NU", "letterIds": ["letter_n", "letter_u"], "soundIds": ["sound_n", "sound_u"], "stage": 2, "difficulty": 1, "phonetic": true, "reviewStatus": "needs-review", "visualId": "clock", "wordAudio": "res://Games/WordMission/Audio/Words/nu.wav", "activities": ["build", "choose", "gate", "tank"] },
+    { "id": "word_sol", "display": "SOL", "letterIds": ["letter_s", "letter_o", "letter_l"], "soundIds": ["sound_s", "sound_o", "sound_l"], "stage": 3, "difficulty": 2, "phonetic": true, "reviewStatus": "needs-review", "visualId": "sun", "wordAudio": "res://Games/WordMission/Audio/Words/sol.wav", "activities": ["build", "choose", "gate", "tank"] },
+    { "id": "word_mus", "display": "MUS", "letterIds": ["letter_m", "letter_u", "letter_s"], "soundIds": ["sound_m", "sound_u", "sound_s"], "stage": 3, "difficulty": 2, "phonetic": true, "reviewStatus": "needs-review", "visualId": "mouse", "wordAudio": "res://Games/WordMission/Audio/Words/mus.wav", "activities": ["build", "choose", "gate", "tank"] },
+    { "id": "word_hus", "display": "HUS", "letterIds": ["letter_h", "letter_u", "letter_s"], "soundIds": ["sound_h", "sound_u", "sound_s"], "stage": 3, "difficulty": 2, "phonetic": true, "reviewStatus": "needs-review", "visualId": "house", "wordAudio": "res://Games/WordMission/Audio/Words/hus.wav", "activities": ["build", "choose", "gate", "tank"] }
+  ],
+  "stages": [
+    { "id": 1, "title": "Bogstavbasen", "masteredRequired": 0 },
+    { "id": 2, "title": "Korte ord", "masteredRequired": 3 },
+    { "id": 3, "title": "Ordporten", "masteredRequired": 1 },
+    { "id": 4, "title": "Længere ord", "masteredRequired": 2 }
+  ]
+}

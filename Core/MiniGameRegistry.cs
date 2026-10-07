@@ -29,6 +29,9 @@ public sealed class MiniGameRegistry
         registry.Register(new MiniGameDefinition("construction-site", "Gravemaskine-plads",
             "res://Games/ConstructionSite/Scenes/ConstructionSite.tscn",
             "res://Shared/Assets/excavator.svg", "Grav jord og fyld lastbilen!"));
+        registry.Register(new MiniGameDefinition("word-mission", "Ordmission",
+            "res://Games/WordMission/Scenes/WordMission.tscn",
+            "res://Shared/Assets/wordmission.svg", "Find lyde og byg ord!"));
         return registry;
     }
 }

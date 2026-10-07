@@ -9,4 +9,4 @@ To add a game:
 3. Keep game-specific state within that game's folder. Share only reusable UI or app state through `Shared/` and `Core/`.
 4. Offer a path back to `res://Core/MainMenu.tscn`; clear scene pause before changing scenes.
 
-`GameBoxState` saves Tank Arena and Gravemaskine-plads completion flags to `user://game_box_state.json`. The registry is the extension point; no broad minigame inheritance hierarchy is required.
+`GameBoxState` saves Tank Arena and Gravemaskine-plads completion flags, the child's name, and Ordmission learning progress to `user://game_box_state.json`. Ordmission keeps its learning content, generator, activities, UI, and audio hooks under `Games/WordMission/`; see its design document before changing educational data. The registry is the extension point; no broad minigame inheritance hierarchy is required.

@@ -49,6 +49,8 @@ var registry = MiniGameRegistry.CreateDefault();
 Check(registry.Get("tank-arena").ScenePath.EndsWith("TankArena.tscn"), "registered game has entry scene");
 Check(registry.Get("construction-site").ScenePath.EndsWith("ConstructionSite.tscn"),
     "construction minigame has entry scene");
+Check(registry.Get("word-mission").ScenePath.EndsWith("WordMission.tscn"),
+    "Ordmission is registered without launcher hardcoding");
 try { registry.Register(registry.Get("tank-arena")); throw new Exception("Duplicate was accepted"); }
 catch (ArgumentException) { Check(true, "duplicate minigame is rejected"); }
 
@@ -66,6 +68,7 @@ Check(GameBoxState.Load(savePath).ConstructionSiteCompleted, "construction compl
 Check(!GameBoxState.FromJson("not json").TankArenaCompleted, "invalid save defaults safely");
 Check(!GameBoxState.FromJson("{\"TankArenaCompleted\":true}").HasChildName,
     "older saves ask for a name while retaining progress");
+WordMissionChecks.Run(Check);
 var mission = new ConstructionMission(8, 3);
 Check(mission.TryDig() && mission.BucketLoaded && mission.SoilRemaining == 2, "dig moves one load into bucket");
 Check(!mission.TryDig(), "full bucket cannot dig twice");

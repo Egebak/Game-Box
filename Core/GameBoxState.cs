@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using GameBox.Games.WordMission.Learning;
 
 namespace GameBox.Core;
 
@@ -10,6 +11,7 @@ public sealed class GameBoxState
     public string ChildName { get; set; } = string.Empty;
     public bool TankArenaCompleted { get; set; }
     public bool ConstructionSiteCompleted { get; set; }
+    public WordMissionProgress WordMission { get; set; } = new();
 
     [JsonIgnore]
     public bool HasChildName => !string.IsNullOrWhiteSpace(ChildName);
@@ -26,7 +28,12 @@ public sealed class GameBoxState
 
     public static GameBoxState FromJson(string json)
     {
-        try { return JsonSerializer.Deserialize<GameBoxState>(json) ?? new GameBoxState(); }
+        try
+        {
+            var state = JsonSerializer.Deserialize<GameBoxState>(json) ?? new GameBoxState();
+            state.WordMission ??= new WordMissionProgress();
+            return state;
+        }
         catch (JsonException) { return new GameBoxState(); }
     }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using GameBox.Core;
 using GameBox.Games.ConstructionSite;
 using GameBox.Games.TankArena;
+using GameBox.Games.WordMission;
 using Godot;
 
 public partial class LauncherSmoke : Node
@@ -34,16 +35,45 @@ public partial class LauncherSmoke : Node
             var constructionTile = menu.FindChildren("*", "Button", true, false).OfType<Button>()
                 .Single(x => x.Text.Contains("Gravemaskine-plads"));
             Check(constructionTile.Icon != null, "launcher has excavator icon");
+            var wordTile = menu.FindChildren("*", "Button", true, false).OfType<Button>()
+                .Single(x => x.Text.Contains("Ordmission"));
+            Check(wordTile.Icon != null, "launcher has Ordmission icon");
 
             var launches = 0;
             var constructionLaunches = 0;
             var returnedFromConstruction = false;
+            var returnedFromWord = false;
             tree.SceneChanged += () =>
             {
                 try
                 {
                     var scene = tree.CurrentScene;
-                    if (scene is ConstructionSite construction)
+                    if (scene is WordMission words)
+                    {
+                        Check(words.FindChildren("*", "Button", true, false).OfType<Button>()
+                            .Any(button => button.Text == "Start mission"), "Ordmission tile launches reading menu");
+                        Input.ParseInputEvent(new InputEventKey { Keycode = Key.Escape, Pressed = true });
+                        void AfterWordPause()
+                        {
+                            tree.ProcessFrame -= AfterWordPause;
+                            try
+                            {
+                                Check(tree.Paused, "Ordmission ESC opens pause menu");
+                                returnedFromWord = true;
+                                words.FindChildren("*", "Button", true, false).OfType<Button>()
+                                    .Last(button => button.Text == "Tilbage til Game Box" && button.IsVisibleInTree())
+                                    .EmitSignal(BaseButton.SignalName.Pressed);
+                            }
+                            catch (Exception error)
+                            {
+                                GD.PushError($"LAUNCHER_SMOKE_FAIL: {error}");
+                                RestoreSave();
+                                tree.Quit(1);
+                            }
+                        }
+                        tree.ProcessFrame += AfterWordPause;
+                    }
+                    else if (scene is ConstructionSite construction)
                     {
                         constructionLaunches++;
                         Check(construction.Player.IsInsideTree(), constructionLaunches == 1
@@ -102,7 +132,13 @@ public partial class LauncherSmoke : Node
                     else if (scene is MainMenu)
                     {
                         Check(!tree.Paused, "return clears pause and reopens Game Box");
-                        if (returnedFromConstruction && launches == 0)
+                        if (returnedFromWord && constructionLaunches == 0)
+                        {
+                            var siteTile = scene.FindChildren("*", "Button", true, false).OfType<Button>()
+                                .Single(x => x.Text.Contains("Gravemaskine-plads"));
+                            siteTile.EmitSignal(BaseButton.SignalName.Pressed);
+                        }
+                        else if (returnedFromConstruction && launches == 0)
                         {
                             var tankTile = scene.FindChildren("*", "Button", true, false).OfType<Button>()
                                 .Single(x => x.Text.Contains("Tank Arena"));
@@ -126,7 +162,7 @@ public partial class LauncherSmoke : Node
                     tree.Quit(1);
                 }
             };
-            constructionTile.EmitSignal(BaseButton.SignalName.Pressed);
+            wordTile.EmitSignal(BaseButton.SignalName.Pressed);
         }
         catch (Exception error)
         {

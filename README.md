@@ -1,6 +1,6 @@
 # Game Box
 
-A small game collection for a child, built with **Godot 4.6.3 .NET** and C#. The launcher offers **Tank Arena** and **Gravemaskine-plads**.
+A small game collection for a child, built with **Godot 4.6.3 .NET** and C#. The launcher offers **Tank Arena**, **Gravemaskine-plads**, and **Ordmission**.
 
 On the first launch, Game Box asks for the child's name. It saves the name locally with game progress in `user://game_box_state.json` and greets the child on later launches without asking again. The name is never sent to a server.
 
@@ -46,17 +46,24 @@ Move close to the glowing work area before clicking. A large red circle marks th
 - `Core/`: launcher, registry and small persistent state saved under Godot's `user://` path.
 - `Games/TankArena/`: the independent Tank Arena entry scene and gameplay scripts.
 - `Games/ConstructionSite/`: the independent construction mission, excavator, soil pile, truck and effects.
+- `Games/WordMission/`: Ordmission's separate learning data, adaptive session generator, activities, parent controls, and optional recording hooks.
 - `Shared/UI/`: visual controls used by the launcher and game.
 - `Shared/Audio/`: short original WAV effects for menus, engines, combat, construction interactions, warnings, and results.
 - `Tests/`: dependency-free console checks for plain C# game and app logic.
 
 See `MINIGAME_DESIGN.md` before adding another game. The launcher reads registry metadata and does not reference Tank Arena classes.
 
+## Ordmission
+
+Choose **Ordmission** from Game Box and press **Start mission**. A short session mixes **Find lyden**, **Byg ordet**, **Hvilket ord?**, **Ordporten**, and **Tankmission**. Tap or click the large choices. **Esc** pauses, and the pause menu returns to Game Box. The **Min vej** screen shows a simple mission path; **For voksne** shows learning details, sound and letter-case settings, and a learning reset. In debug builds, **F9** opens content and stage controls.
+
+The starter data is in `Games/WordMission/Data/starter.json`. Its five example words are **IS, NU, SOL, MUS, HUS**. All five are marked `needs-review`. Letter names, sound cues, sound-to-word relationships, and the pictured meaning of **NU** also need review. No human-recorded phonics audio is included yet. Missing recordings leave the game playable in a clearly labeled visual test mode and produce Godot warnings. **Educational content and Danish phonics recordings must be reviewed by a Danish-speaking adult before relying on the game for reading instruction.** See `Games/WordMission/ORDMISSION_DESIGN.md` for the data schema, review workflow, and recording paths.
+
 ## Tests
 
 Run `dotnet run --project Tests/GameBox.Tests.csproj`.
 
-For engine-level flow checks, run `Tests/LauncherSmoke.tscn`, `Tests/NamePromptSmoke.tscn`, `Tests/TankArenaSmoke.tscn` and `Tests/ConstructionSmoke.tscn` with Godot's `--headless` option. They quit with a nonzero code on failure. The name prompt check verifies first launch and later launch behavior; the construction check performs the complete eight-load mission and verifies truck departure, pause, free play and saved completion.
+For engine-level flow checks, run `Tests/LauncherSmoke.tscn`, `Tests/NamePromptSmoke.tscn`, `Tests/WordMissionSmoke.tscn`, `Tests/TankArenaSmoke.tscn` and `Tests/ConstructionSmoke.tscn` with Godot's `--headless` option. They quit with a nonzero code on failure. The Ordmission check completes all nine activities, exercises assistance, and reopens saved progress. The construction check performs the complete eight-load mission and verifies truck departure, pause, free play and saved completion.
 
 ## Current limitations
 
