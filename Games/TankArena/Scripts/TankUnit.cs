@@ -36,7 +36,7 @@ public partial class TankUnit : CharacterBody3D
         var shape = new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(1.8f, 1.25f, 2.5f) } };
         AddChild(shape);
         var hullColor = IsPlayer ? new Color("#58c9dd") : IsBoss ? new Color("#a45ce0") : new Color("#e6745c");
-        AddMesh(new BoxMesh { Size = new Vector3(1.9f, 0.7f, 2.55f) }, new Vector3(0, 0, 0), hullColor);
+        AddMesh(CreateAngledHull(), Vector3.Zero, hullColor);
         AddMesh(new BoxMesh { Size = new Vector3(2.18f, 0.42f, 2.5f) }, new Vector3(0, -0.40f, 0), new Color("#263242"));
         Turret = new Node3D { Position = new Vector3(0, 0.55f, 0) };
         AddChild(Turret);
@@ -131,6 +131,51 @@ public partial class TankUnit : CharacterBody3D
 
     private void AddMesh(Mesh mesh, Vector3 position, Color color)
         => AddChild(new MeshInstance3D { Mesh = mesh, Position = position, MaterialOverride = Material(color) });
+
+    private static ArrayMesh CreateAngledHull()
+    {
+        // The turret faces local -Z. A recessed top edge and narrower, lower
+        // nose make that end of the hull visibly different from the square rear.
+        var rearTopLeft = new Vector3(-.95f, .35f, 1.275f);
+        var rearTopRight = new Vector3(.95f, .35f, 1.275f);
+        var rearBottomLeft = new Vector3(-.95f, -.35f, 1.275f);
+        var rearBottomRight = new Vector3(.95f, -.35f, 1.275f);
+        var shoulderLeft = new Vector3(-.95f, .35f, -.45f);
+        var shoulderRight = new Vector3(.95f, .35f, -.45f);
+        var noseTopLeft = new Vector3(-.76f, -.08f, -1.275f);
+        var noseTopRight = new Vector3(.76f, -.08f, -1.275f);
+        var noseBottomLeft = new Vector3(-.76f, -.35f, -1.275f);
+        var noseBottomRight = new Vector3(.76f, -.35f, -1.275f);
+
+        var surface = new SurfaceTool();
+        surface.Begin(Mesh.PrimitiveType.Triangles);
+        AddQuad(surface, rearTopLeft, rearTopRight, shoulderRight, shoulderLeft);
+        AddQuad(surface, shoulderLeft, shoulderRight, noseTopRight, noseTopLeft);
+        AddQuad(surface, noseTopLeft, noseTopRight, noseBottomRight, noseBottomLeft);
+        AddQuad(surface, rearBottomLeft, noseBottomLeft, noseBottomRight, rearBottomRight);
+        AddQuad(surface, rearTopRight, rearTopLeft, rearBottomLeft, rearBottomRight);
+        AddTriangle(surface, rearBottomLeft, rearTopLeft, shoulderLeft);
+        AddTriangle(surface, rearBottomLeft, shoulderLeft, noseTopLeft);
+        AddTriangle(surface, rearBottomLeft, noseTopLeft, noseBottomLeft);
+        AddTriangle(surface, rearBottomRight, shoulderRight, rearTopRight);
+        AddTriangle(surface, rearBottomRight, noseTopRight, shoulderRight);
+        AddTriangle(surface, rearBottomRight, noseBottomRight, noseTopRight);
+        surface.GenerateNormals();
+        return surface.Commit();
+    }
+
+    private static void AddQuad(SurfaceTool surface, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+    {
+        AddTriangle(surface, a, b, c);
+        AddTriangle(surface, a, c, d);
+    }
+
+    private static void AddTriangle(SurfaceTool surface, Vector3 a, Vector3 b, Vector3 c)
+    {
+        surface.AddVertex(a);
+        surface.AddVertex(b);
+        surface.AddVertex(c);
+    }
 
     private static StandardMaterial3D Material(Color color)
         => new() { AlbedoColor = color, Roughness = 0.82f };
