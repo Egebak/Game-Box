@@ -40,7 +40,7 @@ public partial class EnemyBrain : Node
         if (_warningRemaining < 0f && Tank.Weapon.ReloadFraction >= 1f && distance < 27f)
         {
             _warningRemaining = WarningSeconds;
-            SoundEffects.Play("enemy_warning", -17f);
+            TankAudio.Play("enemy_warning", -17f);
             var angle = (float)(_random.NextDouble() * 2 - 1) * AimErrorRadians;
             _aimPoint = Tank.GlobalPosition + toward.Rotated(Vector3.Up, angle);
         }

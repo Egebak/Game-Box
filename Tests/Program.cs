@@ -17,6 +17,13 @@ Check(health.Current == 3 && !health.IsDead, "health starts full");
 Check(!health.Damage(1) && health.Current == 2, "damage reduces health");
 Check(health.Damage(5) && health.Current == 0, "damage clamps at zero and destroys");
 Check(!health.Damage(1) && health.Current == 0, "dead tank cannot take more damage");
+Check(health.Heal(2) == 0, "health pickup cannot revive a destroyed tank");
+var recoverable = new HealthModel(5);
+recoverable.Damage(4);
+Check(recoverable.Heal(2) == 2 && recoverable.Current == 3, "health pickup restores two health");
+Check(recoverable.Heal(9) == 2 && recoverable.Current == 5, "healing stops at maximum health");
+Check(PowerUpDropRules.Roll(new Random(1), 0) is null, "zero chance never drops a pickup");
+Check(PowerUpDropRules.Roll(new Random(1), 1) is not null, "certain chance always drops a pickup");
 
 var progress = new ArenaProgress(10);
 for (var i = 0; i < 9; i++) Check(!progress.RecordNormalKill(), $"kill {i + 1} does not summon boss");

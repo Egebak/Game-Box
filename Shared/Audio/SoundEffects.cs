@@ -10,7 +10,8 @@ public static class SoundEffects
         "player_fire", "enemy_fire", "boss_fire", "impact_wall", "impact_metal",
         "tank_hit", "tank_destroy", "tank_explosion", "boss_explosion",
         "engine_loop", "reload_ready", "enemy_warning", "boss_arrive", "victory", "defeat",
-        "construction_dig", "construction_dump", "construction_load"
+        "construction_dig", "construction_dump", "construction_load",
+        "powerup_pickup", "missile_launch", "missile_impact"
     };
 
     public static AudioStream? Get(string id)

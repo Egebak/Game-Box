@@ -23,6 +23,29 @@ public sealed class HealthModel
         Current = Math.Max(0, Current - amount);
         return IsDead;
     }
+
+    public int Heal(int amount)
+    {
+        if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        if (IsDead) return 0;
+        var restored = Math.Min(amount, Maximum - Current);
+        Current += restored;
+        return restored;
+    }
+}
+
+public enum PowerUpKind { Health, Missile }
+
+public static class PowerUpDropRules
+{
+    public const double Chance = 0.4;
+
+    public static PowerUpKind? Roll(Random random, double chance = Chance)
+    {
+        if (chance < 0 || chance > 1) throw new ArgumentOutOfRangeException(nameof(chance));
+        if (random.NextDouble() >= chance) return null;
+        return random.Next(2) == 0 ? PowerUpKind.Health : PowerUpKind.Missile;
+    }
 }
 
 public sealed class ArenaProgress

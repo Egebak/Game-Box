@@ -17,6 +17,7 @@ public partial class TankArenaSmoke : Node
         {
             ProcessMode = ProcessModeEnum.Always;
             var arena = GD.Load<PackedScene>("res://Games/TankArena/Scenes/TankArena.tscn").Instantiate<TankArena>();
+            arena.PowerUpDropChance = 1f;
             AddChild(arena);
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             Check(SoundEffects.AllIds.All(id => SoundEffects.Get(id) is not null), "all sound effects load");
@@ -28,6 +29,13 @@ public partial class TankArenaSmoke : Node
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.Escape, Pressed = true });
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             Check(!GetTree().Paused, "Esc resumes arena");
+
+            arena._Input(new InputEventMouseButton { ButtonIndex = MouseButton.WheelDown, Pressed = true });
+            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(TankAudio.ZoomAttenuationDb < 0f, "zooming out lowers tank sound volume");
+            arena._Input(new InputEventMouseButton { ButtonIndex = MouseButton.WheelUp, Pressed = true });
+            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(TankAudio.ZoomAttenuationDb == 0f, "zooming in restores tank sound volume");
 
             var player = arena.GetChildren().OfType<TankUnit>().Single(x => x.IsPlayer);
             for (var shot = 0; shot < 3; shot++)
@@ -50,12 +58,43 @@ public partial class TankArenaSmoke : Node
             for (var i = 0; i < 35; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
             Check(target.Health.Current == 2, "shell hits and damages enemy");
 
+            player.TakeDamage(2);
+            var healthPickup = new PowerUpPickup
+            {
+                Kind = PowerUpKind.Health, Player = player, TryCollect = arena.TryCollectPowerUp,
+                Position = new Vector3(player.GlobalPosition.X, 2.3f, player.GlobalPosition.Z)
+            };
+            arena.AddChild(healthPickup);
+            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(player.Health.Current == 5, "health pickup restores two points on contact");
+
             target.TakeDamage(2);
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             Check(arena.GetChildren().OfType<TankExplosion>().Any(), "normal tank creates a 3D explosion");
             Check(target.GetChildren().OfType<TankSmoke>().Single().ActivePuffCount > 0,
                 "normal tank wreck emits smoke");
-            for (var i = 1; i < 10; i++)
+            Check(arena.GetChildren().OfType<PowerUpPickup>().Any(), "destroyed tank drops a power-up when chance succeeds");
+
+            var missileTarget = arena.GetChildren().OfType<TankUnit>()
+                .First(x => !x.IsPlayer && !x.IsDestroyed);
+            missileTarget.GetChildren().OfType<EnemyBrain>().Single().ProcessMode = ProcessModeEnum.Disabled;
+            missileTarget.GlobalPosition = new Vector3(4, .75f, -6);
+            var missilePickup = new PowerUpPickup
+            {
+                Kind = PowerUpKind.Missile, Player = player, TryCollect = arena.TryCollectPowerUp,
+                Position = new Vector3(player.GlobalPosition.X, 2.3f, player.GlobalPosition.Z)
+            };
+            arena.AddChild(missilePickup);
+            for (var frame = 0; frame < 4 && !arena.GetChildren().OfType<HomingMissile>().Any(); frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            var missile = arena.GetChildren().OfType<HomingMissile>().Single();
+            Check(missile.Target == missileTarget && missile.Damage == 3,
+                "missile pickup targets the nearest enemy with three damage");
+            for (var frame = 0; frame < 80 && !missileTarget.IsDestroyed; frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(missileTarget.IsDestroyed, "heat-seeking missile destroys a three-health enemy");
+
+            for (var i = 2; i < 10; i++)
             {
                 var victim = arena.GetChildren().OfType<TankUnit>().First(x => !x.IsPlayer && !x.IsBoss && !x.IsDestroyed);
                 victim.TakeDamage(99);
@@ -90,10 +129,12 @@ public partial class TankArenaSmoke : Node
             arena.QueueFree();
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             var lossArena = GD.Load<PackedScene>("res://Games/TankArena/Scenes/TankArena.tscn").Instantiate<TankArena>();
+            lossArena.PowerUpDropChance = 1f;
             AddChild(lossArena);
             var lossPlayer = lossArena.GetChildren().OfType<TankUnit>().Single(x => x.IsPlayer);
             lossPlayer.TakeDamage(99);
             Check(GetTree().Paused, "defeat pauses arena");
+            Check(lossArena.GetChildren().OfType<PowerUpPickup>().Any(), "player death can also drop a power-up");
             var playerSmoke = lossPlayer.GetChildren().OfType<TankSmoke>().Single();
             var initialPuffs = playerSmoke.ActivePuffCount;
             var defeat = lossArena.GetChildren().OfType<CanvasLayer>().Single().FindChildren("Title", "Label", true, false)

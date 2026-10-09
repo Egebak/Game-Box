@@ -66,7 +66,7 @@ public partial class TankUnit : CharacterBody3D
     {
         if (IsDestroyed) return;
         _motor.Step(this, Mathf.Clamp(throttle, -1, 1), Mathf.Clamp(turn, -1, 1), delta);
-        if (_engineAudio is not null) _engineAudio.VolumeDb = Mathf.Lerp(-29f, -21f, Mathf.Abs(throttle));
+        if (_engineAudio is not null) _engineAudio.VolumeDb = Mathf.Lerp(-29f, -21f, Mathf.Abs(throttle)) + TankAudio.ZoomAttenuationDb;
     }
 
     public void AimAt(Vector3 target, double delta)
@@ -83,13 +83,20 @@ public partial class TankUnit : CharacterBody3D
 
     public void SetWarning(bool warning) => _warningLamp.Visible = warning && !IsDestroyed;
 
+    public int RestoreHealth(int amount)
+    {
+        var restored = Health.Heal(amount);
+        if (restored > 0) Damaged?.Invoke(Health.Current);
+        return restored;
+    }
+
     public void TakeDamage(int amount)
     {
         if (IsDestroyed) return;
         var died = Health.Damage(amount);
         Damaged?.Invoke(Health.Current);
-        if (!died) SoundEffects.Play("tank_hit", -10f);
-        else if (IsPlayer) SoundEffects.Play("tank_destroy", -8f);
+        if (!died) TankAudio.Play("tank_hit", -10f);
+        else if (IsPlayer) TankAudio.Play("tank_destroy", -8f);
         if (!died) return;
         _wreckSeconds = IsBoss ? 6f : 5f;
         _warningLamp.Visible = false;

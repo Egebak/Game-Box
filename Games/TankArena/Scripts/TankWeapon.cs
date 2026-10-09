@@ -34,7 +34,7 @@ public partial class TankWeapon : Node3D
     public override void _PhysicsProcess(double delta)
     {
         if (_magazine.Tick((float)delta) > 0 && Tank.IsPlayer && !Tank.IsDestroyed)
-            SoundEffects.Play("reload_ready", -13f);
+            TankAudio.Play("reload_ready", -13f);
     }
 
     public bool TryFire()

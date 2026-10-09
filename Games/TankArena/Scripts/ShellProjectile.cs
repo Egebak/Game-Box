@@ -36,10 +36,10 @@ public partial class ShellProjectile : Node3D
             var position = hit["position"].AsVector3();
             if (hit["collider"].AsGodotObject() is TankUnit tank)
             {
-                SoundEffects.Play("impact_metal", -10f);
+                TankAudio.Play("impact_metal", -10f);
                 tank.TakeDamage(Damage);
             }
-            else SoundEffects.Play("impact_wall", -11f);
+            else TankAudio.Play("impact_wall", -11f);
             Impact(position);
             Finish();
             return;

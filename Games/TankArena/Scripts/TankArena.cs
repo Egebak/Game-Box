@@ -12,6 +12,7 @@ public partial class TankArena : Node3D
     [Export] public int TargetKills = 10;
     [Export] public float PlayerShellSpeed = 17f;
     [Export] public float EnemyShellSpeed = 13f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float PowerUpDropChance = .4f;
 
     private readonly Vector3[] _spawns =
     {
@@ -33,6 +34,8 @@ public partial class TankArena : Node3D
     private bool _ended;
     private bool _victoryPending;
     private float _victorySecondsRemaining;
+    private float _cameraDistance = 25f;
+    private readonly Random _random = new();
 
     public override void _Ready()
     {
@@ -42,8 +45,9 @@ public partial class TankArena : Node3D
         _player = CreateTank(Vector3.Up * .75f, true, false);
         _camera = new Camera3D { Current = true, Fov = 44f, Far = 160f };
         AddChild(_camera);
-        _camera.GlobalPosition = _player.GlobalPosition + new Vector3(0, 25, 25);
+        _camera.GlobalPosition = _player.GlobalPosition + new Vector3(0, _cameraDistance, _cameraDistance);
         _camera.LookAt(_player.GlobalPosition);
+        TankAudio.SetZoom(0f);
         BuildHud();
         for (var i = 0; i < 3; i++) SpawnNormal();
     }
@@ -65,13 +69,19 @@ public partial class TankArena : Node3D
         _reloadText.Text = weapon.ReadyCount == weapon.Capacity
             ? $"SKUD  {weapon.ReadyCount}/{weapon.Capacity} ●"
             : $"SKUD  {weapon.ReadyCount}/{weapon.Capacity}  {Mathf.RoundToInt(weapon.ReloadFraction * 100)}%";
-        var desiredCamera = _player.GlobalPosition + new Vector3(0, 25, 25);
+        var desiredCamera = _player.GlobalPosition + new Vector3(0, _cameraDistance, _cameraDistance);
         _camera.GlobalPosition = _camera.GlobalPosition.Lerp(desiredCamera, Mathf.Clamp((float)delta * 3.8f, 0, 1));
         _camera.LookAt(_player.GlobalPosition + new Vector3(0, .5f, 0));
     }
 
-    public override void _UnhandledInput(InputEvent @event)
+    public override void _Input(InputEvent @event)
     {
+        if (@event is InputEventMouseButton wheel && wheel.Pressed && !_ended && !GetTree().Paused &&
+            wheel.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown)
+        {
+            _cameraDistance = Mathf.Clamp(_cameraDistance + (wheel.ButtonIndex == MouseButton.WheelDown ? 3f : -3f), 25f, 43f);
+            TankAudio.SetZoom((_cameraDistance - 25f) / 18f);
+        }
         if (@event is InputEventKey key && key.Pressed && !key.Echo && key.Keycode == Key.Escape && !_ended)
         {
             if (_pauseOverlay.Visible) Resume(); else Pause();
@@ -116,17 +126,18 @@ public partial class TankArena : Node3D
         shell.GlobalPosition = position;
         shooter.Weapon.Track(shell, volleyId);
         if (barrelIndex == 0)
-            SoundEffects.Play(shooter.IsPlayer ? "player_fire" : shooter.IsBoss ? "boss_fire" : "enemy_fire",
+            TankAudio.Play(shooter.IsPlayer ? "player_fire" : shooter.IsBoss ? "boss_fire" : "enemy_fire",
                 shooter.IsPlayer ? -8f : -13f);
     }
 
     private void OnTankDestroyed(TankUnit tank)
     {
+        TryDropPowerUp(tank.GlobalPosition);
         if (tank.IsPlayer) { EndGame(false); return; }
         var explosion = new TankExplosion { RadiusScale = tank.IsBoss ? 1.7f : 1f };
         AddChild(explosion);
         explosion.GlobalPosition = tank.GlobalPosition + Vector3.Up * (tank.IsBoss ? 1.1f : .55f);
-        SoundEffects.Play(tank.IsBoss ? "boss_explosion" : "tank_explosion", tank.IsBoss ? -5f : -8f);
+        TankAudio.Play(tank.IsBoss ? "boss_explosion" : "tank_explosion", tank.IsBoss ? -5f : -8f);
         if (tank.IsBoss)
         {
             _progress.RecordBossKill();
@@ -147,6 +158,34 @@ public partial class TankArena : Node3D
         else if (_spawned < TargetKills) CallDeferred(nameof(SpawnNormal));
     }
 
+    private void TryDropPowerUp(Vector3 position)
+    {
+        var kind = PowerUpDropRules.Roll(_random, PowerUpDropChance);
+        if (kind is null) return;
+        var pickup = new PowerUpPickup
+        {
+            Kind = kind.Value, Player = _player, TryCollect = TryCollectPowerUp,
+            Position = new Vector3(position.X, 2.3f, position.Z),
+            ProcessMode = ProcessModeEnum.Pausable
+        };
+        AddChild(pickup);
+    }
+
+    public bool TryCollectPowerUp(PowerUpKind kind)
+    {
+        if (_ended || _player.IsDestroyed) return false;
+        if (kind == PowerUpKind.Health) return _player.RestoreHealth(2) > 0;
+        var nearest = GetChildren().OfType<TankUnit>()
+            .Where(tank => !tank.IsPlayer && !tank.IsDestroyed)
+            .OrderBy(tank => tank.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition)).FirstOrDefault();
+        if (nearest is null) return false;
+        var missile = new HomingMissile { Target = nearest, ProcessMode = ProcessModeEnum.Pausable };
+        AddChild(missile);
+        missile.GlobalPosition = _player.GlobalPosition + Vector3.Up * 2.2f;
+        TankAudio.Play("missile_launch", -6f);
+        return true;
+    }
+
     private void SpawnNormal()
     {
         if (_spawned >= TargetKills || _ended) return;
@@ -159,7 +198,7 @@ public partial class TankArena : Node3D
     {
         if (_ended) return;
         CreateTank(new Vector3(0, 1.15f, -29), false, true);
-        SoundEffects.Play("boss_arrive", -7f);
+        TankAudio.Play("boss_arrive", -7f);
     }
 
     private void Pause()
@@ -207,6 +246,8 @@ public partial class TankArena : Node3D
         GetTree().Paused = true;
     }
 
+    public override void _ExitTree() => TankAudio.SetZoom(0f);
+
     private void BuildHud()
     {
         var canvas = new CanvasLayer();
@@ -239,7 +280,7 @@ public partial class TankArena : Node3D
         controlsPanel.OffsetLeft = 220;
         controlsPanel.OffsetRight = -220;
         controlsPanel.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color(0.05f, .1f, .16f, .84f), 12));
-        controlsPanel.AddChild(UiStyle.Label("W/S KØR   A/D DREJ   MUS SIGT   KLIK SKYD   ESC PAUSE", 18));
+        controlsPanel.AddChild(UiStyle.Label("W/S KØR   A/D DREJ   MUS SIGT   KLIK SKYD   MUSEHJUL ZOOM   ESC PAUSE", 18));
         canvas.AddChild(controlsPanel);
 
         _pauseOverlay = MakeOverlay(canvas, "Pause", true);
