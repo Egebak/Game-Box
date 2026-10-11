@@ -39,6 +39,7 @@ for (var roll = 0; roll < 80; roll++) dropKinds.Add(PowerUpDropRules.Roll(dropRa
 Check(dropKinds.Count == 5 && dropKinds.Contains(PowerUpKind.Nuke) && dropKinds.Contains(PowerUpKind.Mine),
     "all five power-ups can drop");
 Check(Math.Abs(NukeRules.BlastRadius - 10.2f) < .001f, "nuclear blast spans four tank lengths");
+Check(NukeRules.Damage == 3, "nuclear blast deals three damage");
 Check(NukeRules.InBlast(0f, 10.2f) && !NukeRules.InBlast(0f, 10.21f),
     "nuclear blast includes its edge but not tanks outside it");
 var nukeSupply = new NukeSupply();

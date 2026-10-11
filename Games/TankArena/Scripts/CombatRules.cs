@@ -76,6 +76,7 @@ public sealed class MinigunTimer
 
 public static class NukeRules
 {
+    public const int Damage = 3;
     public const float TankLength = 2.55f;
     public const float BlastRadius = 4f * TankLength;
     public static bool InBlast(float dx, float dz) => dx * dx + dz * dz <= BlastRadius * BlastRadius;

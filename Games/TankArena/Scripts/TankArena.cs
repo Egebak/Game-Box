@@ -132,7 +132,7 @@ public partial class TankArena : Node3D
     private TankUnit CreateTank(Vector3 position, bool player, bool boss)
     {
         var tune = player ? new TankTuning { Health = 5, ShellSpeed = PlayerShellSpeed } : boss
-            ? new TankTuning { Health = 7, ForwardSpeed = 6f, TurnSpeed = 1.3f, TurretSpeed = 2.5f,
+            ? new TankTuning { Health = 20, ForwardSpeed = 6f, TurnSpeed = 1.3f, TurretSpeed = 2.5f,
                 ReloadSeconds = 2.15f, ShellSpeed = EnemyShellSpeed + 1f, Scale = 1.55f }
             : new TankTuning { Health = 3, ForwardSpeed = 7.5f, TurnSpeed = 1.75f,
                 TurretSpeed = 2.5f, ReloadSeconds = 3f, ShellSpeed = EnemyShellSpeed };
@@ -195,7 +195,7 @@ public partial class TankArena : Node3D
             {
                 var dx = tank.GlobalPosition.X - position.X;
                 var dz = tank.GlobalPosition.Z - position.Z;
-                if (NukeRules.InBlast(dx, dz)) tank.TakeDamage(tank.Health.Current);
+                if (NukeRules.InBlast(dx, dz)) tank.TakeDamage(NukeRules.Damage);
             }
         }
         finally { _nukeDetonating = false; }

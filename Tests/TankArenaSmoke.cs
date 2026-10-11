@@ -127,7 +127,7 @@ public partial class TankArenaSmoke : Node
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
             var boss = arena.GetChildren().OfType<TankUnit>().Single(x => x.IsBoss);
-            Check(boss.Health.Maximum == 7, "boss appears after ten normal tanks");
+            Check(boss.Health.Maximum == 20, "boss appears with twenty health after ten normal tanks");
             Check(boss.Weapon.BarrelCount == 2, "boss has two cannons");
             var shellCount = arena.GetChildren().OfType<ShellProjectile>().Count();
             Check(boss.Weapon.TryFire(), "boss fires a volley");
@@ -300,6 +300,10 @@ public partial class TankArenaSmoke : Node
             nukeTargets[0].GlobalPosition = new Vector3(0, .75f, -8);
             nukeTargets[1].GlobalPosition = new Vector3(4, .75f, -12);
             nukeTargets[2].GlobalPosition = new Vector3(20, .75f, 20);
+            var nukeBoss = new TankUnit { Position = new Vector3(-6, 1.15f, -9),
+                ProcessMode = ProcessModeEnum.Pausable };
+            nukeBoss.Configure(new TankTuning { Health = 20, Scale = 1.55f }, false, true);
+            nukeArena.AddChild(nukeBoss);
             nukeArena.AddChild(new PowerUpPickup { Kind = PowerUpKind.Nuke, Player = nukePlayer,
                 TryCollect = nukeArena.TryCollectPowerUp, Position = new Vector3(0, 2.3f, 0) });
             for (var frame = 0; frame < 4 && nukePlayer.Weapon.NukesRemaining == 0; frame++)
@@ -320,13 +324,13 @@ public partial class TankArenaSmoke : Node
                 await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
             Check(nukeTargets[0].IsDestroyed && nukeTargets[1].IsDestroyed && !nukeTargets[2].IsDestroyed,
                 "nuclear blast destroys nearby tanks but spares distant tanks");
-            Check(nukePlayer.IsDestroyed && nukeArena.GetChildren().OfType<NuclearMushroomCloud>().Any(),
-                "nuclear blast destroys player and creates a mushroom cloud");
+            Check(nukeBoss.Health.Current == 17 && !nukeBoss.IsDestroyed,
+                "nuclear blast damages boss by three without destroying it");
+            Check(nukePlayer.Health.Current == 2 && !nukePlayer.IsDestroyed &&
+                nukeArena.GetChildren().OfType<NuclearMushroomCloud>().Any(),
+                "nuclear blast damages player by three and creates a mushroom cloud");
             var nukeResult = nukeArena.GetChildren().OfType<CanvasLayer>().Single().GetNode<Control>("ResultOverlay");
-            Check(!nukeResult.Visible, "mushroom cloud is visible before defeat overlay");
-            await ToSignal(GetTree().CreateTimer(3.2), SceneTreeTimer.SignalName.Timeout);
-            Check(nukeResult.Visible && GetTree().Paused, "nuclear self-hit ends in defeat after cloud appears");
-            GetTree().Paused = false;
+            Check(!nukeResult.Visible && !GetTree().Paused, "arena continues when player survives nuclear blast");
             nukeArena.QueueFree();
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             GD.Print("TANK_ARENA_SMOKE_PASS");
