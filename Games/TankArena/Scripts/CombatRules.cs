@@ -61,7 +61,7 @@ public static class PowerUpDropRules
 
 public sealed class MinigunTimer
 {
-    public const float DurationSeconds = 60f;
+    public const float DurationSeconds = 15f;
     public float SecondsRemaining { get; private set; }
     public bool Active => SecondsRemaining > 0f;
 

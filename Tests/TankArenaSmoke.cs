@@ -161,8 +161,8 @@ public partial class TankArenaSmoke : Node
                 await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
             Check(minigunPlayer.Weapon.IsMinigunActive && minigunPlayer.Weapon.Capacity == 50,
                 "minigun pickup enables fifty-shot mode");
-            Check(minigunPlayer.Weapon.MinigunSecondsRemaining > 59f,
-                "minigun pickup starts a one-minute timer");
+            Check(minigunPlayer.Weapon.MinigunSecondsRemaining > 14f,
+                "minigun pickup starts a fifteen-second timer");
 
             var minigunVictim = minigunArena.GetChildren().OfType<TankUnit>().First(x => !x.IsPlayer);
             minigunVictim.GetChildren().OfType<EnemyBrain>().Single().ProcessMode = ProcessModeEnum.Disabled;
@@ -192,9 +192,9 @@ public partial class TankArenaSmoke : Node
                 minigunArena.GetChildren().OfType<ShellProjectile>().Count(x => x.MinigunShot) >= 50,
                 "fifty minigun shots can coexist in the arena");
             Check(!minigunPlayer.Weapon.TryFire(), "fifty-first minigun shot is blocked");
-            minigunPlayer.Weapon._PhysicsProcess(60);
+            minigunPlayer.Weapon._PhysicsProcess(15);
             Check(!minigunPlayer.Weapon.IsMinigunActive && minigunPlayer.Weapon.Capacity == 3,
-                "normal three-shot mode returns after one minute");
+                "normal three-shot mode returns after fifteen seconds");
             Check(minigunPlayer.Weapon.TryFire(), "normal shells can fire after minigun expires");
             minigunArena.QueueFree();
             await ToSignal(GetTree().CreateTimer(1.5), SceneTreeTimer.SignalName.Timeout);

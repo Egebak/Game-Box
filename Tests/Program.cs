@@ -39,12 +39,12 @@ for (var roll = 0; roll < 80; roll++) dropKinds.Add(PowerUpDropRules.Roll(dropRa
 Check(dropKinds.Count == 3 && dropKinds.Contains(PowerUpKind.Minigun), "all three power-ups can drop");
 var minigunTimer = new MinigunTimer();
 minigunTimer.Activate();
-minigunTimer.Tick(59f);
-Check(minigunTimer.Active && minigunTimer.SecondsRemaining == 1f, "minigun lasts for one minute");
+minigunTimer.Tick(14f);
+Check(minigunTimer.Active && minigunTimer.SecondsRemaining == 1f, "minigun lasts for fifteen seconds");
 minigunTimer.Activate();
-Check(minigunTimer.SecondsRemaining == 60f, "another pickup refreshes minigun time");
-minigunTimer.Tick(60f);
-Check(!minigunTimer.Active, "minigun mode expires after sixty seconds");
+Check(minigunTimer.SecondsRemaining == 15f, "another pickup refreshes minigun time");
+minigunTimer.Tick(15f);
+Check(!minigunTimer.Active, "minigun mode expires after fifteen seconds");
 
 var progress = new ArenaProgress(10);
 for (var i = 0; i < 9; i++) Check(!progress.RecordNormalKill(), $"kill {i + 1} does not summon boss");
