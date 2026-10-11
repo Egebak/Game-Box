@@ -12,14 +12,15 @@ public partial class TankWeapon : Node3D
     private ShotMagazine _minigunMagazine = null!;
     private readonly MinigunTimer _minigunTimer = new();
     private readonly MineSupply _mines = new();
-    private int _nukesRemaining;
+    private readonly NukeSupply _nukes = new();
     private readonly Dictionary<int, (int Remaining, ShotMagazine Magazine)> _remainingShellsByVolley = new();
     private int _nextVolleyId;
     public TankUnit Tank { get; set; } = null!;
     private ShotMagazine ActiveMagazine => IsMinigunActive ? _minigunMagazine : _normalMagazine;
     public bool IsMinigunActive => Tank.IsPlayer && _minigunTimer.Active;
     public float MinigunSecondsRemaining => _minigunTimer.SecondsRemaining;
-    public int NukesRemaining => _nukesRemaining;
+    public int NukesRemaining => _nukes.Remaining;
+    public float NukeSecondsRemaining => _nukes.SecondsRemaining;
     public int MinesRemaining => _mines.Remaining;
     public float MineSecondsRemaining => _mines.SecondsRemaining;
     public int ReadyCount => ActiveMagazine.ReadyCount;
@@ -47,6 +48,7 @@ public partial class TankWeapon : Node3D
     public override void _PhysicsProcess(double delta)
     {
         _minigunTimer.Tick((float)delta);
+        _nukes.Tick((float)delta);
         _mines.Tick((float)delta);
         _minigunMagazine.Tick((float)delta);
         if (_normalMagazine.Tick((float)delta) > 0 && Tank.IsPlayer && !Tank.IsDestroyed && !IsMinigunActive)
@@ -63,14 +65,13 @@ public partial class TankWeapon : Node3D
     public bool GrantNukes()
     {
         if (!Tank.IsPlayer || Tank.IsDestroyed) return false;
-        _nukesRemaining += 2;
+        _nukes.Grant();
         return true;
     }
 
     public bool TryFireNuke()
     {
-        if (!Tank.IsPlayer || Tank.IsDestroyed || _nukesRemaining <= 0) return false;
-        _nukesRemaining--;
+        if (!Tank.IsPlayer || Tank.IsDestroyed || !_nukes.TryFire()) return false;
         NukeFired?.Invoke(_muzzles[0].GlobalPosition, -_muzzles[0].GlobalBasis.Z, Tank);
         return true;
     }

@@ -81,6 +81,35 @@ public static class NukeRules
     public static bool InBlast(float dx, float dz) => dx * dx + dz * dz <= BlastRadius * BlastRadius;
 }
 
+public sealed class NukeSupply
+{
+    public const int Maximum = 2;
+    public const float DurationSeconds = 15f;
+    public int Remaining { get; private set; }
+    public float SecondsRemaining { get; private set; }
+    public bool Active => Remaining > 0 && SecondsRemaining > 0f;
+
+    public void Grant()
+    {
+        Remaining = Maximum;
+        SecondsRemaining = DurationSeconds;
+    }
+
+    public void Tick(float delta)
+    {
+        if (delta < 0f) throw new ArgumentOutOfRangeException(nameof(delta));
+        SecondsRemaining = Math.Max(0f, SecondsRemaining - delta);
+        if (SecondsRemaining <= 0f) Remaining = 0;
+    }
+
+    public bool TryFire()
+    {
+        if (!Active) return false;
+        Remaining--;
+        return true;
+    }
+}
+
 public sealed class MineSupply
 {
     public const int PickupCount = 10;

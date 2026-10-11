@@ -41,6 +41,20 @@ Check(dropKinds.Count == 5 && dropKinds.Contains(PowerUpKind.Nuke) && dropKinds.
 Check(Math.Abs(NukeRules.BlastRadius - 10.2f) < .001f, "nuclear blast spans four tank lengths");
 Check(NukeRules.InBlast(0f, 10.2f) && !NukeRules.InBlast(0f, 10.21f),
     "nuclear blast includes its edge but not tanks outside it");
+var nukeSupply = new NukeSupply();
+nukeSupply.Grant();
+Check(nukeSupply.Remaining == 2 && nukeSupply.SecondsRemaining == 15f,
+    "nuclear pickup grants at most two shots for fifteen seconds");
+Check(nukeSupply.TryFire() && nukeSupply.Remaining == 1, "nuclear launch uses one shot");
+nukeSupply.Tick(10f);
+nukeSupply.Grant();
+Check(nukeSupply.Remaining == 2 && nukeSupply.SecondsRemaining == 15f,
+    "another nuclear pickup refreshes time without stacking above two shots");
+nukeSupply.Tick(14.9f);
+Check(nukeSupply.Active && nukeSupply.Remaining == 2, "nuclear shots remain available before timeout");
+nukeSupply.Tick(.2f);
+Check(!nukeSupply.Active && nukeSupply.Remaining == 0 && !nukeSupply.TryFire(),
+    "unused nuclear shots disappear after fifteen seconds");
 var mineSupply = new MineSupply();
 mineSupply.Grant();
 Check(mineSupply.Active && mineSupply.Remaining == 10, "mine pickup grants ten placements");

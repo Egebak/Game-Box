@@ -81,7 +81,9 @@ public partial class TankArena : Node3D
             : weapon.ReadyCount == weapon.Capacity
                 ? $"SKUD  {weapon.ReadyCount}/{weapon.Capacity} ●"
                 : $"SKUD  {weapon.ReadyCount}/{weapon.Capacity}  {Mathf.RoundToInt(weapon.ReloadFraction * 100)}%";
-        _specialText.Text = $"ATOM  {weapon.NukesRemaining}   MINER  {weapon.MinesRemaining}" +
+        _specialText.Text = $"ATOM  {weapon.NukesRemaining}" +
+            (weapon.NukesRemaining > 0 ? $" ({Mathf.CeilToInt(weapon.NukeSecondsRemaining)}s)" : "") +
+            $"   MINER  {weapon.MinesRemaining}" +
             (weapon.MinesRemaining > 0 ? $" ({Mathf.CeilToInt(weapon.MineSecondsRemaining)}s)" : "");
         var desiredCamera = _player.GlobalPosition + new Vector3(0, _cameraDistance, _cameraDistance);
         _camera.GlobalPosition = _camera.GlobalPosition.Lerp(desiredCamera, Mathf.Clamp((float)delta * 3.8f, 0, 1));

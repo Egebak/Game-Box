@@ -304,12 +304,18 @@ public partial class TankArenaSmoke : Node
                 TryCollect = nukeArena.TryCollectPowerUp, Position = new Vector3(0, 2.3f, 0) });
             for (var frame = 0; frame < 4 && nukePlayer.Weapon.NukesRemaining == 0; frame++)
                 await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
-            Check(nukePlayer.Weapon.NukesRemaining == 2, "nuclear pickup grants two shots");
+            Check(nukePlayer.Weapon.NukesRemaining == 2 && nukePlayer.Weapon.NukeSecondsRemaining > 14f,
+                "nuclear pickup grants two shots for fifteen seconds");
+            Check(nukeArena.TryCollectPowerUp(PowerUpKind.Nuke) && nukePlayer.Weapon.NukesRemaining == 2,
+                "another nuclear pickup refreshes time without adding extra shots");
             nukePlayer.Turret.GlobalRotation = Vector3.Zero;
             nukeArena._Input(new InputEventMouseButton { ButtonIndex = MouseButton.Right, Pressed = true });
             var nuke = nukeArena.GetChildren().OfType<NukeProjectile>().Single();
             Check(nukePlayer.Weapon.NukesRemaining == 1 && nuke.Speed == nukeArena.PlayerShellSpeed * .5f,
                 "right click launches one nuke at half shell speed");
+            nukePlayer.Weapon._PhysicsProcess(15);
+            Check(nukePlayer.Weapon.NukesRemaining == 0 && !nukePlayer.Weapon.TryFireNuke() && nuke.IsInsideTree(),
+                "nuclear ability expires after fifteen seconds while launched nuke keeps flying");
             for (var frame = 0; frame < 90 && !nukeTargets[0].IsDestroyed; frame++)
                 await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
             Check(nukeTargets[0].IsDestroyed && nukeTargets[1].IsDestroyed && !nukeTargets[2].IsDestroyed,
