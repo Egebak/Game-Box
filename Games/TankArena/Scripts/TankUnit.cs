@@ -93,7 +93,22 @@ public partial class TankUnit : CharacterBody3D
     public void TakeDamage(int amount)
     {
         if (IsDestroyed) return;
+        var before = Health.Current;
         var died = Health.Damage(amount);
+        FinishDamage(before, died);
+    }
+
+    public void TakeMinigunHit()
+    {
+        if (IsDestroyed) return;
+        var before = Health.Current;
+        var died = Health.DamageFifths(1);
+        FinishDamage(before, died);
+    }
+
+    private void FinishDamage(int before, bool died)
+    {
+        if (Health.Current == before) return;
         Damaged?.Invoke(Health.Current);
         if (!died) TankAudio.Play("tank_hit", -10f);
         else if (IsPlayer) TankAudio.Play("tank_destroy", -8f);

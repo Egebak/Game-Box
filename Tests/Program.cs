@@ -22,8 +22,29 @@ var recoverable = new HealthModel(5);
 recoverable.Damage(4);
 Check(recoverable.Heal(2) == 2 && recoverable.Current == 3, "health pickup restores two health");
 Check(recoverable.Heal(9) == 2 && recoverable.Current == 5, "healing stops at maximum health");
+var minigunTarget = new HealthModel(3);
+for (var hit = 0; hit < 4; hit++) Check(!minigunTarget.DamageFifths(1) && minigunTarget.Current == 3,
+    $"minigun hit {hit + 1} deals one fifth without rounding up");
+Check(!minigunTarget.DamageFifths(1) && minigunTarget.Current == 2,
+    "five minigun hits equal one normal shell");
+minigunTarget.Damage(1);
+for (var hit = 0; hit < 4; hit++) minigunTarget.DamageFifths(1);
+Check(minigunTarget.Current == 1 && minigunTarget.DamageFifths(1),
+    "fractional hits accumulate across normal damage and can destroy a tank");
 Check(PowerUpDropRules.Roll(new Random(1), 0) is null, "zero chance never drops a pickup");
 Check(PowerUpDropRules.Roll(new Random(1), 1) is not null, "certain chance always drops a pickup");
+var dropKinds = new System.Collections.Generic.HashSet<PowerUpKind>();
+var dropRandom = new Random(4);
+for (var roll = 0; roll < 80; roll++) dropKinds.Add(PowerUpDropRules.Roll(dropRandom, 1)!.Value);
+Check(dropKinds.Count == 3 && dropKinds.Contains(PowerUpKind.Minigun), "all three power-ups can drop");
+var minigunTimer = new MinigunTimer();
+minigunTimer.Activate();
+minigunTimer.Tick(59f);
+Check(minigunTimer.Active && minigunTimer.SecondsRemaining == 1f, "minigun lasts for one minute");
+minigunTimer.Activate();
+Check(minigunTimer.SecondsRemaining == 60f, "another pickup refreshes minigun time");
+minigunTimer.Tick(60f);
+Check(!minigunTimer.Active, "minigun mode expires after sixty seconds");
 
 var progress = new ArenaProgress(10);
 for (var i = 0; i < 9; i++) Check(!progress.RecordNormalKill(), $"kill {i + 1} does not summon boss");
@@ -51,6 +72,18 @@ magazine.ShellEnded();
 magazine.ShellEnded();
 magazine.ShellEnded();
 Check(magazine.InFlightCount == 0, "flight count never goes below zero");
+var minigunMagazine = new ShotMagazine(50, .18f, .025f);
+var minigunCanFireFifty = true;
+for (var shot = 0; shot < 50; shot++)
+{
+    minigunCanFireFifty &= minigunMagazine.TryFire();
+    minigunMagazine.Tick(.025f);
+}
+Check(minigunCanFireFifty && minigunMagazine.InFlightCount == 50,
+    "minigun can keep fifty shots in flight");
+Check(!minigunMagazine.TryFire(), "minigun blocks a fifty-first airborne shot");
+minigunMagazine.ShellEnded();
+Check(minigunMagazine.TryFire(), "an ended minigun shot frees a flight slot");
 
 var registry = MiniGameRegistry.CreateDefault();
 Check(registry.Get("tank-arena").ScenePath.EndsWith("TankArena.tscn"), "registered game has entry scene");

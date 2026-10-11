@@ -9,6 +9,7 @@ public partial class ShellProjectile : Node3D
     public Vector3 Direction { get; set; }
     public float Speed { get; set; } = 14f;
     public int Damage { get; set; } = 1;
+    public bool MinigunShot { get; set; }
     public TankUnit Shooter { get; set; } = null!;
     public event Action<ShellProjectile>? Ended;
     private float _life = 3.8f;
@@ -18,11 +19,11 @@ public partial class ShellProjectile : Node3D
     {
         AddChild(new MeshInstance3D
         {
-            Mesh = new SphereMesh { Radius = 0.34f, Height = 0.68f },
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = Shooter.IsPlayer ? new Color("#ffe16b") : new Color("#ff775d"),
+            Mesh = new SphereMesh { Radius = MinigunShot ? .18f : .34f, Height = MinigunShot ? .36f : .68f },
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = MinigunShot ? new Color("#8df4ff") : Shooter.IsPlayer ? new Color("#ffe16b") : new Color("#ff775d"),
                 ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded }
         });
-        AddChild(new OmniLight3D { LightColor = Shooter.IsPlayer ? new Color("#ffe16b") : new Color("#ff775d"), LightEnergy = 1.3f, OmniRange = 3f });
+        AddChild(new OmniLight3D { LightColor = MinigunShot ? new Color("#8df4ff") : Shooter.IsPlayer ? new Color("#ffe16b") : new Color("#ff775d"), LightEnergy = 1.3f, OmniRange = 3f });
     }
 
     public override void _PhysicsProcess(double delta)
@@ -37,7 +38,8 @@ public partial class ShellProjectile : Node3D
             if (hit["collider"].AsGodotObject() is TankUnit tank)
             {
                 TankAudio.Play("impact_metal", -10f);
-                tank.TakeDamage(Damage);
+                if (MinigunShot) tank.TakeMinigunHit();
+                else tank.TakeDamage(Damage);
             }
             else TankAudio.Play("impact_wall", -11f);
             Impact(position);

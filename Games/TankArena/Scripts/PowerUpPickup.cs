@@ -14,7 +14,12 @@ public partial class PowerUpPickup : Node3D
 
     public override void _Ready()
     {
-        var color = Kind == PowerUpKind.Health ? new Color("#6df5a5") : new Color("#ffcb59");
+        var color = Kind switch
+        {
+            PowerUpKind.Health => new Color("#6df5a5"),
+            PowerUpKind.Missile => new Color("#ffcb59"),
+            _ => new Color("#8df4ff")
+        };
         var core = new MeshInstance3D
         {
             Mesh = new SphereMesh { Radius = .66f, Height = 1.32f },
@@ -29,7 +34,7 @@ public partial class PowerUpPickup : Node3D
             IconBlock(icon, new Vector3(.2f, .9f, .12f), Vector3.Zero, color);
             IconBlock(icon, new Vector3(.9f, .2f, .12f), Vector3.Zero, color);
         }
-        else
+        else if (Kind == PowerUpKind.Missile)
         {
             IconBlock(icon, new Vector3(.26f, .54f, .14f), new Vector3(0, -.08f, 0), color);
             var tip = new MeshInstance3D
@@ -40,6 +45,13 @@ public partial class PowerUpPickup : Node3D
                 MaterialOverride = Glow(color)
             };
             icon.AddChild(tip);
+        }
+        else
+        {
+            IconBlock(icon, new Vector3(.3f, .6f, .17f), new Vector3(-.3f, 0, 0), color);
+            for (var barrel = -1; barrel <= 1; barrel++)
+                IconBlock(icon, new Vector3(.68f, .1f, .14f), new Vector3(.17f, barrel * .2f, 0), color);
+            IconBlock(icon, new Vector3(.18f, .32f, .17f), new Vector3(-.35f, -.37f, 0), color);
         }
 
         _ring = new Node3D { Rotation = new Vector3(.24f, 0, .3f) };

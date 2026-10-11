@@ -8,15 +8,20 @@ namespace GameBox.Games.TankArena;
 public partial class TankWeapon : Node3D
 {
     private Marker3D[] _muzzles = null!;
-    private ShotMagazine _magazine = null!;
-    private readonly Dictionary<int, int> _remainingShellsByVolley = new();
+    private ShotMagazine _normalMagazine = null!;
+    private ShotMagazine _minigunMagazine = null!;
+    private readonly MinigunTimer _minigunTimer = new();
+    private readonly Dictionary<int, (int Remaining, ShotMagazine Magazine)> _remainingShellsByVolley = new();
     private int _nextVolleyId;
     public TankUnit Tank { get; set; } = null!;
-    public int ReadyCount => _magazine.ReadyCount;
-    public int InFlightCount => _magazine.InFlightCount;
-    public int Capacity => _magazine.Capacity;
+    private ShotMagazine ActiveMagazine => IsMinigunActive ? _minigunMagazine : _normalMagazine;
+    public bool IsMinigunActive => Tank.IsPlayer && _minigunTimer.Active;
+    public float MinigunSecondsRemaining => _minigunTimer.SecondsRemaining;
+    public int ReadyCount => ActiveMagazine.ReadyCount;
+    public int InFlightCount => ActiveMagazine.InFlightCount;
+    public int Capacity => ActiveMagazine.Capacity;
     public int BarrelCount => _muzzles.Length;
-    public float ReloadFraction => _magazine.NextChargeFraction;
+    public float ReloadFraction => ActiveMagazine.NextChargeFraction;
     public event Action<Vector3, Vector3, TankUnit, int, int>? Fired;
 
     public override void _Ready()
@@ -28,20 +33,31 @@ public partial class TankWeapon : Node3D
             _muzzles[i] = new Marker3D { Position = new Vector3(offsets[i], -0.05f, -1.8f) };
             AddChild(_muzzles[i]);
         }
-        _magazine = new ShotMagazine(Tank.IsPlayer ? 3 : 1, Tank.Tuning.ReloadSeconds, Tank.IsPlayer ? .32f : 0f);
+        _normalMagazine = new ShotMagazine(Tank.IsPlayer ? 3 : 1, Tank.Tuning.ReloadSeconds, Tank.IsPlayer ? .32f : 0f);
+        _minigunMagazine = new ShotMagazine(50, .18f, .025f);
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        if (_magazine.Tick((float)delta) > 0 && Tank.IsPlayer && !Tank.IsDestroyed)
+        _minigunTimer.Tick((float)delta);
+        _minigunMagazine.Tick((float)delta);
+        if (_normalMagazine.Tick((float)delta) > 0 && Tank.IsPlayer && !Tank.IsDestroyed && !IsMinigunActive)
             TankAudio.Play("reload_ready", -13f);
+    }
+
+    public bool ActivateMinigun()
+    {
+        if (!Tank.IsPlayer || Tank.IsDestroyed) return false;
+        _minigunTimer.Activate();
+        return true;
     }
 
     public bool TryFire()
     {
-        if (Tank.IsDestroyed || !_magazine.TryFire()) return false;
+        var magazine = ActiveMagazine;
+        if (Tank.IsDestroyed || !magazine.TryFire()) return false;
         var volleyId = ++_nextVolleyId;
-        _remainingShellsByVolley[volleyId] = _muzzles.Length;
+        _remainingShellsByVolley[volleyId] = (_muzzles.Length, magazine);
         for (var i = 0; i < _muzzles.Length; i++)
             Fired?.Invoke(_muzzles[i].GlobalPosition, -_muzzles[i].GlobalBasis.Z, Tank, volleyId, i);
         return true;
@@ -49,12 +65,12 @@ public partial class TankWeapon : Node3D
 
     public void Track(ShellProjectile shell, int volleyId) => shell.Ended += _ =>
     {
-        if (!_remainingShellsByVolley.TryGetValue(volleyId, out var remaining)) return;
-        if (remaining > 1) _remainingShellsByVolley[volleyId] = remaining - 1;
+        if (!_remainingShellsByVolley.TryGetValue(volleyId, out var volley)) return;
+        if (volley.Remaining > 1) _remainingShellsByVolley[volleyId] = (volley.Remaining - 1, volley.Magazine);
         else
         {
             _remainingShellsByVolley.Remove(volleyId);
-            _magazine.ShellEnded();
+            volley.Magazine.ShellEnded();
         }
     };
 }

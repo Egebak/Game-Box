@@ -5,6 +5,7 @@ namespace GameBox.Games.TankArena;
 
 public sealed class HealthModel
 {
+    private int _damageFifths;
     public int Maximum { get; }
     public int Current { get; private set; }
     public bool IsDead => Current <= 0;
@@ -24,6 +25,16 @@ public sealed class HealthModel
         return IsDead;
     }
 
+    public bool DamageFifths(int fifths)
+    {
+        if (fifths < 0) throw new ArgumentOutOfRangeException(nameof(fifths));
+        if (IsDead) return false;
+        _damageFifths += fifths;
+        var wholeDamage = _damageFifths / 5;
+        _damageFifths %= 5;
+        return Damage(wholeDamage);
+    }
+
     public int Heal(int amount)
     {
         if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
@@ -34,7 +45,7 @@ public sealed class HealthModel
     }
 }
 
-public enum PowerUpKind { Health, Missile }
+public enum PowerUpKind { Health, Missile, Minigun }
 
 public static class PowerUpDropRules
 {
@@ -44,7 +55,22 @@ public static class PowerUpDropRules
     {
         if (chance < 0 || chance > 1) throw new ArgumentOutOfRangeException(nameof(chance));
         if (random.NextDouble() >= chance) return null;
-        return random.Next(2) == 0 ? PowerUpKind.Health : PowerUpKind.Missile;
+        return (PowerUpKind)random.Next(3);
+    }
+}
+
+public sealed class MinigunTimer
+{
+    public const float DurationSeconds = 60f;
+    public float SecondsRemaining { get; private set; }
+    public bool Active => SecondsRemaining > 0f;
+
+    public void Activate() => SecondsRemaining = DurationSeconds;
+
+    public void Tick(float delta)
+    {
+        if (delta < 0f) throw new ArgumentOutOfRangeException(nameof(delta));
+        SecondsRemaining = Math.Max(0f, SecondsRemaining - delta);
     }
 }
 

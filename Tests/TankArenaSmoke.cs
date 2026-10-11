@@ -143,6 +143,61 @@ public partial class TankArenaSmoke : Node
             await ToSignal(GetTree().CreateTimer(.4), SceneTreeTimer.SignalName.Timeout);
             Check(playerSmoke.ActivePuffCount > initialPuffs, "player wreck keeps smoking on defeat screen");
             await ToSignal(GetTree().CreateTimer(1.2), SceneTreeTimer.SignalName.Timeout);
+
+            GetTree().Paused = false;
+            lossArena.QueueFree();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var minigunArena = GD.Load<PackedScene>("res://Games/TankArena/Scenes/TankArena.tscn").Instantiate<TankArena>();
+            minigunArena.PowerUpDropChance = 0f;
+            AddChild(minigunArena);
+            var minigunPlayer = minigunArena.GetChildren().OfType<TankUnit>().Single(x => x.IsPlayer);
+            minigunArena.AddChild(new PowerUpPickup
+            {
+                Kind = PowerUpKind.Minigun, Player = minigunPlayer,
+                TryCollect = minigunArena.TryCollectPowerUp,
+                Position = new Vector3(minigunPlayer.GlobalPosition.X, 2.3f, minigunPlayer.GlobalPosition.Z)
+            });
+            for (var frame = 0; frame < 4 && !minigunPlayer.Weapon.IsMinigunActive; frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(minigunPlayer.Weapon.IsMinigunActive && minigunPlayer.Weapon.Capacity == 50,
+                "minigun pickup enables fifty-shot mode");
+            Check(minigunPlayer.Weapon.MinigunSecondsRemaining > 59f,
+                "minigun pickup starts a one-minute timer");
+
+            var minigunVictim = minigunArena.GetChildren().OfType<TankUnit>().First(x => !x.IsPlayer);
+            minigunVictim.GetChildren().OfType<EnemyBrain>().Single().ProcessMode = ProcessModeEnum.Disabled;
+            minigunVictim.GlobalPosition = new Vector3(6, .75f, -10);
+            for (var shot = 0; shot < 5; shot++)
+            {
+                var pellet = new ShellProjectile
+                {
+                    Shooter = minigunPlayer, Direction = Vector3.Forward,
+                    Speed = 20f, MinigunShot = true
+                };
+                minigunArena.AddChild(pellet);
+                pellet.GlobalPosition = new Vector3(6, 1.25f, -5);
+            }
+            for (var frame = 0; frame < 25; frame++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(minigunVictim.Health.Current == 2,
+                "five minigun projectiles cause one point of damage");
+
+            minigunPlayer.Turret.GlobalRotation = Vector3.Zero;
+            var firedFifty = true;
+            for (var shot = 0; shot < 50; shot++)
+            {
+                firedFifty &= minigunPlayer.Weapon.TryFire();
+                minigunPlayer.Weapon._PhysicsProcess(.025);
+            }
+            Check(firedFifty && minigunPlayer.Weapon.InFlightCount == 50 &&
+                minigunArena.GetChildren().OfType<ShellProjectile>().Count(x => x.MinigunShot) >= 50,
+                "fifty minigun shots can coexist in the arena");
+            Check(!minigunPlayer.Weapon.TryFire(), "fifty-first minigun shot is blocked");
+            minigunPlayer.Weapon._PhysicsProcess(60);
+            Check(!minigunPlayer.Weapon.IsMinigunActive && minigunPlayer.Weapon.Capacity == 3,
+                "normal three-shot mode returns after one minute");
+            Check(minigunPlayer.Weapon.TryFire(), "normal shells can fire after minigun expires");
+            minigunArena.QueueFree();
+            await ToSignal(GetTree().CreateTimer(1.5), SceneTreeTimer.SignalName.Timeout);
             GD.Print("TANK_ARENA_SMOKE_PASS");
             GetTree().Quit(0);
         }

@@ -66,9 +66,11 @@ public partial class TankArena : Node3D
         _player.AimAt(MousePoint(), delta);
         if (Input.IsMouseButtonPressed(MouseButton.Left)) _player.Weapon.TryFire();
         var weapon = _player.Weapon;
-        _reloadText.Text = weapon.ReadyCount == weapon.Capacity
-            ? $"SKUD  {weapon.ReadyCount}/{weapon.Capacity} ●"
-            : $"SKUD  {weapon.ReadyCount}/{weapon.Capacity}  {Mathf.RoundToInt(weapon.ReloadFraction * 100)}%";
+        _reloadText.Text = weapon.IsMinigunActive
+            ? $"MINIGUN  {weapon.ReadyCount}/{weapon.Capacity}  {Mathf.CeilToInt(weapon.MinigunSecondsRemaining)}s"
+            : weapon.ReadyCount == weapon.Capacity
+                ? $"SKUD  {weapon.ReadyCount}/{weapon.Capacity} ●"
+                : $"SKUD  {weapon.ReadyCount}/{weapon.Capacity}  {Mathf.RoundToInt(weapon.ReloadFraction * 100)}%";
         var desiredCamera = _player.GlobalPosition + new Vector3(0, _cameraDistance, _cameraDistance);
         _camera.GlobalPosition = _camera.GlobalPosition.Lerp(desiredCamera, Mathf.Clamp((float)delta * 3.8f, 0, 1));
         _camera.LookAt(_player.GlobalPosition + new Vector3(0, .5f, 0));
@@ -120,14 +122,20 @@ public partial class TankArena : Node3D
 
     private void FireShell(Vector3 position, Vector3 direction, TankUnit shooter, int volleyId, int barrelIndex)
     {
-        var shell = new ShellProjectile { Direction = direction, Speed = shooter.Tuning.ShellSpeed,
-            Damage = shooter.Tuning.ShellDamage, Shooter = shooter, ProcessMode = ProcessModeEnum.Pausable };
+        var minigun = shooter.IsPlayer && shooter.Weapon.IsMinigunActive;
+        var shell = new ShellProjectile { Direction = direction, Speed = minigun ? 20f : shooter.Tuning.ShellSpeed,
+            Damage = shooter.Tuning.ShellDamage, MinigunShot = minigun,
+            Shooter = shooter, ProcessMode = ProcessModeEnum.Pausable };
         AddChild(shell);
         shell.GlobalPosition = position;
         shooter.Weapon.Track(shell, volleyId);
-        if (barrelIndex == 0)
-            TankAudio.Play(shooter.IsPlayer ? "player_fire" : shooter.IsBoss ? "boss_fire" : "enemy_fire",
-                shooter.IsPlayer ? -8f : -13f);
+        if (barrelIndex != 0) return;
+        if (minigun)
+        {
+            if (volleyId % 3 == 0) TankAudio.Play("player_fire", -17f, 1.65f);
+        }
+        else TankAudio.Play(shooter.IsPlayer ? "player_fire" : shooter.IsBoss ? "boss_fire" : "enemy_fire",
+            shooter.IsPlayer ? -8f : -13f);
     }
 
     private void OnTankDestroyed(TankUnit tank)
@@ -175,6 +183,7 @@ public partial class TankArena : Node3D
     {
         if (_ended || _player.IsDestroyed) return false;
         if (kind == PowerUpKind.Health) return _player.RestoreHealth(2) > 0;
+        if (kind == PowerUpKind.Minigun) return _player.Weapon.ActivateMinigun();
         var nearest = GetChildren().OfType<TankUnit>()
             .Where(tank => !tank.IsPlayer && !tank.IsDestroyed)
             .OrderBy(tank => tank.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition)).FirstOrDefault();
