@@ -68,8 +68,10 @@ public partial class TankArena : Node3D
             _victorySecondsRemaining -= (float)delta;
             if (_victorySecondsRemaining <= 0f) { EndGame(true); return; }
         }
-        var throttle = (Input.IsKeyPressed(Key.W) ? 1f : 0f) - (Input.IsKeyPressed(Key.S) ? 1f : 0f);
-        var turn = (Input.IsKeyPressed(Key.A) ? 1f : 0f) - (Input.IsKeyPressed(Key.D) ? 1f : 0f);
+        var throttle = (Input.IsKeyPressed(Key.W) || Input.IsKeyPressed(Key.Up) ? 1f : 0f) -
+            (Input.IsKeyPressed(Key.S) || Input.IsKeyPressed(Key.Down) ? 1f : 0f);
+        var turn = (Input.IsKeyPressed(Key.A) || Input.IsKeyPressed(Key.Left) ? 1f : 0f) -
+            (Input.IsKeyPressed(Key.D) || Input.IsKeyPressed(Key.Right) ? 1f : 0f);
         _player.Drive(throttle, turn, delta);
         _player.AimAt(MousePoint(), delta);
         if (Input.IsMouseButtonPressed(MouseButton.Left)) _player.Weapon.TryFire();
@@ -372,7 +374,7 @@ public partial class TankArena : Node3D
         controlsPanel.OffsetLeft = 220;
         controlsPanel.OffsetRight = -220;
         controlsPanel.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color(0.05f, .1f, .16f, .84f), 12));
-        controlsPanel.AddChild(UiStyle.Label("W/S KØR   A/D DREJ   MUS SIGT   KLIK SKYD   HØJREKLIK/N ATOM   M MINE   MUSEHJUL ZOOM   ESC PAUSE", 18));
+        controlsPanel.AddChild(UiStyle.Label("WASD/PILTASTER KØR   MUS SIGT   KLIK SKYD   HØJREKLIK/N ATOM   M MINE   MUSEHJUL ZOOM   ESC PAUSE", 18));
         canvas.AddChild(controlsPanel);
 
         _pauseOverlay = MakeOverlay(canvas, "Pause", true);

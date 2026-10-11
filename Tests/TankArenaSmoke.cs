@@ -238,6 +238,10 @@ public partial class TankArenaSmoke : Node
             mineArena._Input(new InputEventKey { Keycode = Key.M, Pressed = true });
             var placedMine = mineArena.GetChildren().OfType<TankMine>().Single();
             Check(minePlayer.Weapon.MinesRemaining == 9, "M places one mine");
+            Check(placedMine.GetNode<MeshInstance3D>("WarningRing").Visible &&
+                placedMine.GetNode<MeshInstance3D>("Beacon").Visible &&
+                placedMine.GetChildren().OfType<OmniLight3D>().Any(light => light.LightEnergy > 0f),
+                "placed mine has a visible warning ring and lit beacon");
             var mineVictim = mineArena.GetChildren().OfType<TankUnit>().First(x => !x.IsPlayer);
             mineVictim.GetChildren().OfType<EnemyBrain>().Single().ProcessMode = ProcessModeEnum.Disabled;
             mineVictim.GlobalPosition = new Vector3(placedMine.GlobalPosition.X, .75f, placedMine.GlobalPosition.Z);
@@ -255,6 +259,35 @@ public partial class TankArenaSmoke : Node
                 mineArena.GetChildren().OfType<TankMine>().Count() == 1,
                 "mine ability expires while placed mines remain");
             mineArena.QueueFree();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            var controlsArena = GD.Load<PackedScene>("res://Games/TankArena/Scenes/TankArena.tscn").Instantiate<TankArena>();
+            controlsArena.PowerUpDropChance = 0f;
+            AddChild(controlsArena);
+            foreach (var enemy in controlsArena.GetChildren().OfType<TankUnit>().Where(x => !x.IsPlayer))
+                enemy.GetChildren().OfType<EnemyBrain>().Single().ProcessMode = ProcessModeEnum.Disabled;
+            var controlsPlayer = controlsArena.GetChildren().OfType<TankUnit>().Single(x => x.IsPlayer);
+            var initialZ = controlsPlayer.GlobalPosition.Z;
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Up, Pressed = true });
+            for (var frame = 0; frame < 20; frame++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Up, Pressed = false });
+            Check(controlsPlayer.GlobalPosition.Z < initialZ - .1f, "up arrow drives tank forward");
+            var forwardZ = controlsPlayer.GlobalPosition.Z;
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Down, Pressed = true });
+            for (var frame = 0; frame < 50; frame++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Down, Pressed = false });
+            Check(controlsPlayer.GlobalPosition.Z > forwardZ + .1f, "down arrow reverses tank");
+            var heading = controlsPlayer.GlobalRotation.Y;
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Left, Pressed = true });
+            for (var frame = 0; frame < 20; frame++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Left, Pressed = false });
+            Check(controlsPlayer.GlobalRotation.Y > heading + .1f, "left arrow turns tank left");
+            heading = controlsPlayer.GlobalRotation.Y;
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Right, Pressed = true });
+            for (var frame = 0; frame < 20; frame++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Right, Pressed = false });
+            Check(controlsPlayer.GlobalRotation.Y < heading - .1f, "right arrow turns tank right");
+            controlsArena.QueueFree();
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
             var nukeArena = GD.Load<PackedScene>("res://Games/TankArena/Scenes/TankArena.tscn").Instantiate<TankArena>();

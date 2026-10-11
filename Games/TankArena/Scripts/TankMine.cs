@@ -8,23 +8,41 @@ public partial class TankMine : Node3D
 {
     public event Action<Vector3>? Exploded;
     private MeshInstance3D _lamp = null!;
+    private OmniLight3D _beaconLight = null!;
     private float _age;
 
     public override void _Ready()
     {
-        AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = .53f, BottomRadius = .62f, Height = .17f },
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("#303a3d"), Roughness = .8f } });
-        _lamp = new MeshInstance3D { Position = Vector3.Up * .12f,
-            Mesh = new SphereMesh { Radius = .16f, Height = .32f },
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("#ff735d"),
-                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded } };
+        AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = .7f, BottomRadius = .76f, Height = .24f },
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color("#29343b"), Roughness = .8f } });
+        AddChild(new MeshInstance3D { Name = "WarningRing", Position = Vector3.Up * .15f,
+            Mesh = new TorusMesh { InnerRadius = .79f, OuterRadius = 1.04f },
+            MaterialOverride = WarningMaterial(new Color("#ffba4e")) });
+        for (var i = 0; i < 8; i++)
+        {
+            var angle = i * Mathf.Tau / 8f;
+            AddChild(new MeshInstance3D { Position = new Vector3(Mathf.Cos(angle) * .54f, .15f, Mathf.Sin(angle) * .54f),
+                Rotation = new Vector3(0, -angle, 0), Mesh = new BoxMesh { Size = new Vector3(.18f, .04f, .38f) },
+                MaterialOverride = WarningMaterial(new Color("#ffc95f")) });
+        }
+        AddChild(new MeshInstance3D { Position = Vector3.Up * .32f,
+            Mesh = new CylinderMesh { TopRadius = .09f, BottomRadius = .13f, Height = .42f },
+            MaterialOverride = WarningMaterial(new Color("#4f5960")) });
+        _lamp = new MeshInstance3D { Name = "Beacon", Position = Vector3.Up * .58f,
+            Mesh = new SphereMesh { Radius = .3f, Height = .6f },
+            MaterialOverride = WarningMaterial(new Color("#ff5d45")) };
         AddChild(_lamp);
+        _beaconLight = new OmniLight3D { Position = Vector3.Up * .6f, LightColor = new Color("#ff7252"),
+            OmniRange = 4.5f, LightEnergy = 1.8f };
+        AddChild(_beaconLight);
     }
 
     public override void _PhysicsProcess(double delta)
     {
         _age += (float)delta;
-        _lamp.Visible = _age % .7f < .46f;
+        var pulse = .5f + .5f * Mathf.Sin(_age * 7f);
+        _lamp.Scale = Vector3.One * Mathf.Lerp(.85f, 1.15f, pulse);
+        _beaconLight.LightEnergy = Mathf.Lerp(1.2f, 2.6f, pulse);
         foreach (var tank in GetParent().GetChildren().OfType<TankUnit>())
         {
             if (tank.IsDestroyed) continue;
@@ -39,4 +57,10 @@ public partial class TankMine : Node3D
             return;
         }
     }
+
+    private static StandardMaterial3D WarningMaterial(Color color) => new()
+    {
+        AlbedoColor = color,
+        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded
+    };
 }
