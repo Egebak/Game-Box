@@ -149,32 +149,25 @@ public partial class TankUnit : CharacterBody3D
 
     private static ArrayMesh CreateAngledHull()
     {
-        // The turret faces local -Z. A recessed top edge and narrower, lower
-        // nose make that end of the hull visibly different from the square rear.
+        // The turret faces local -Z. Keep a full-width box and slope its front
+        // from the top deck down to the lower front edge.
         var rearTopLeft = new Vector3(-.95f, .35f, 1.275f);
         var rearTopRight = new Vector3(.95f, .35f, 1.275f);
         var rearBottomLeft = new Vector3(-.95f, -.35f, 1.275f);
         var rearBottomRight = new Vector3(.95f, -.35f, 1.275f);
-        var shoulderLeft = new Vector3(-.95f, .35f, -.45f);
-        var shoulderRight = new Vector3(.95f, .35f, -.45f);
-        var noseTopLeft = new Vector3(-.76f, -.08f, -1.275f);
-        var noseTopRight = new Vector3(.76f, -.08f, -1.275f);
-        var noseBottomLeft = new Vector3(-.76f, -.35f, -1.275f);
-        var noseBottomRight = new Vector3(.76f, -.35f, -1.275f);
+        var frontTopLeft = new Vector3(-.95f, .35f, -.45f);
+        var frontTopRight = new Vector3(.95f, .35f, -.45f);
+        var frontBottomLeft = new Vector3(-.95f, -.35f, -1.275f);
+        var frontBottomRight = new Vector3(.95f, -.35f, -1.275f);
 
         var surface = new SurfaceTool();
         surface.Begin(Mesh.PrimitiveType.Triangles);
-        AddQuad(surface, rearTopLeft, rearTopRight, shoulderRight, shoulderLeft);
-        AddQuad(surface, shoulderLeft, shoulderRight, noseTopRight, noseTopLeft);
-        AddQuad(surface, noseTopLeft, noseTopRight, noseBottomRight, noseBottomLeft);
-        AddQuad(surface, rearBottomLeft, noseBottomLeft, noseBottomRight, rearBottomRight);
+        AddQuad(surface, rearTopLeft, rearTopRight, frontTopRight, frontTopLeft);
+        AddQuad(surface, frontTopLeft, frontTopRight, frontBottomRight, frontBottomLeft);
+        AddQuad(surface, rearBottomLeft, frontBottomLeft, frontBottomRight, rearBottomRight);
         AddQuad(surface, rearTopRight, rearTopLeft, rearBottomLeft, rearBottomRight);
-        AddTriangle(surface, rearBottomLeft, rearTopLeft, shoulderLeft);
-        AddTriangle(surface, rearBottomLeft, shoulderLeft, noseTopLeft);
-        AddTriangle(surface, rearBottomLeft, noseTopLeft, noseBottomLeft);
-        AddTriangle(surface, rearBottomRight, shoulderRight, rearTopRight);
-        AddTriangle(surface, rearBottomRight, noseTopRight, shoulderRight);
-        AddTriangle(surface, rearBottomRight, noseBottomRight, noseTopRight);
+        AddQuad(surface, rearBottomLeft, rearTopLeft, frontTopLeft, frontBottomLeft);
+        AddQuad(surface, rearBottomRight, frontBottomRight, frontTopRight, rearTopRight);
         surface.GenerateNormals();
         return surface.Commit();
     }
@@ -187,9 +180,11 @@ public partial class TankUnit : CharacterBody3D
 
     private static void AddTriangle(SurfaceTool surface, Vector3 a, Vector3 b, Vector3 c)
     {
+        // Godot renders clockwise triangles from the outside. Reversing the
+        // geometric point order keeps the hull's top, sides, and nose visible.
         surface.AddVertex(a);
-        surface.AddVertex(b);
         surface.AddVertex(c);
+        surface.AddVertex(b);
     }
 
     private static StandardMaterial3D Material(Color color)

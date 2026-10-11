@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GameBox.Games.TankArena;
@@ -38,6 +39,31 @@ public partial class TankArenaSmoke : Node
             Check(TankAudio.ZoomAttenuationDb == 0f, "zooming in restores tank sound volume");
 
             var player = arena.GetChildren().OfType<TankUnit>().Single(x => x.IsPlayer);
+            var hull = player.GetChildren().OfType<MeshInstance3D>()
+                .Select(mesh => mesh.Mesh).OfType<ArrayMesh>().Single();
+            var vertices = hull.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            var edges = new Dictionary<(Vector3 From, Vector3 To), int>();
+            var facesOutward = vertices.Length > 0 && vertices.Length % 3 == 0;
+            for (var i = 0; i < vertices.Length; i += 3)
+            {
+                var a = vertices[i];
+                var b = vertices[i + 1];
+                var c = vertices[i + 2];
+                var godotFrontNormal = (c - a).Cross(b - a);
+                facesOutward &= godotFrontNormal.Dot((a + b + c) / 3f) > 0f;
+                CountEdge(a, b);
+                CountEdge(b, c);
+                CountEdge(c, a);
+            }
+            Check(facesOutward && edges.Values.All(count => count == 2),
+                "angled tank hull is closed and visible from outside");
+
+            void CountEdge(Vector3 from, Vector3 to)
+            {
+                if (edges.TryGetValue((to, from), out var count)) edges[(to, from)] = count + 1;
+                else edges[(from, to)] = 1;
+            }
+
             for (var shot = 0; shot < 3; shot++)
             {
                 player.Turret.GlobalRotation = Vector3.Zero;
