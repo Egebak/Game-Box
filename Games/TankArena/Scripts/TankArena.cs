@@ -27,6 +27,7 @@ public partial class TankArena : Node3D
     private Camera3D _camera = null!;
     private Label _healthText = null!;
     private Label _reloadText = null!;
+    private Label _specialText = null!;
     private Label _progressText = null!;
     private Control _pauseOverlay = null!;
     private Control _resultOverlay = null!;
@@ -34,6 +35,8 @@ public partial class TankArena : Node3D
     private bool _ended;
     private bool _victoryPending;
     private float _victorySecondsRemaining;
+    private bool _nukeDetonating;
+    private float _nuclearDefeatSecondsRemaining;
     private float _cameraDistance = 25f;
     private readonly Random _random = new();
 
@@ -55,6 +58,11 @@ public partial class TankArena : Node3D
     public override void _PhysicsProcess(double delta)
     {
         if (_ended || GetTree().Paused) return;
+        if (_nuclearDefeatSecondsRemaining > 0f)
+        {
+            _nuclearDefeatSecondsRemaining -= (float)delta;
+            if (_nuclearDefeatSecondsRemaining <= 0f) { EndGame(false); return; }
+        }
         if (_victoryPending)
         {
             _victorySecondsRemaining -= (float)delta;
@@ -71,6 +79,8 @@ public partial class TankArena : Node3D
             : weapon.ReadyCount == weapon.Capacity
                 ? $"SKUD  {weapon.ReadyCount}/{weapon.Capacity} ●"
                 : $"SKUD  {weapon.ReadyCount}/{weapon.Capacity}  {Mathf.RoundToInt(weapon.ReloadFraction * 100)}%";
+        _specialText.Text = $"ATOM  {weapon.NukesRemaining}   MINER  {weapon.MinesRemaining}" +
+            (weapon.MinesRemaining > 0 ? $" ({Mathf.CeilToInt(weapon.MineSecondsRemaining)}s)" : "");
         var desiredCamera = _player.GlobalPosition + new Vector3(0, _cameraDistance, _cameraDistance);
         _camera.GlobalPosition = _camera.GlobalPosition.Lerp(desiredCamera, Mathf.Clamp((float)delta * 3.8f, 0, 1));
         _camera.LookAt(_player.GlobalPosition + new Vector3(0, .5f, 0));
@@ -78,6 +88,21 @@ public partial class TankArena : Node3D
 
     public override void _Input(InputEvent @event)
     {
+        if (!_ended && !GetTree().Paused && @event is InputEventMouseButton fireNuke &&
+            fireNuke.Pressed && fireNuke.ButtonIndex == MouseButton.Right)
+        {
+            if (_player.Weapon.TryFireNuke()) GetViewport().SetInputAsHandled();
+        }
+        if (!_ended && !GetTree().Paused && @event is InputEventKey special && special.Pressed && !special.Echo)
+        {
+            var used = special.Keycode switch
+            {
+                Key.N => _player.Weapon.TryFireNuke(),
+                Key.M => _player.Weapon.TryPlaceMine(),
+                _ => false
+            };
+            if (used) GetViewport().SetInputAsHandled();
+        }
         if (@event is InputEventMouseButton wheel && wheel.Pressed && !_ended && !GetTree().Paused &&
             wheel.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown)
         {
@@ -111,6 +136,11 @@ public partial class TankArena : Node3D
         tank.Configure(tune, player, boss);
         AddChild(tank);
         tank.Weapon.Fired += FireShell;
+        if (player)
+        {
+            tank.Weapon.NukeFired += FireNuke;
+            tank.Weapon.MinePlaced += PlaceMine;
+        }
         tank.Destroyed += OnTankDestroyed;
         if (!player)
         {
@@ -138,10 +168,59 @@ public partial class TankArena : Node3D
             shooter.IsPlayer ? -8f : -13f);
     }
 
+    private void FireNuke(Vector3 position, Vector3 direction, TankUnit shooter)
+    {
+        var nuke = new NukeProjectile { Direction = direction, Speed = shooter.Tuning.ShellSpeed * .5f,
+            Shooter = shooter, ProcessMode = ProcessModeEnum.Pausable };
+        AddChild(nuke);
+        nuke.GlobalPosition = position;
+        nuke.Detonated += DetonateNuke;
+        TankAudio.Play("boss_fire", -5f, .6f);
+    }
+
+    private void DetonateNuke(Vector3 position)
+    {
+        var cloud = new NuclearMushroomCloud { Position = new Vector3(position.X, .15f, position.Z) };
+        AddChild(cloud);
+        TankAudio.Play("boss_explosion", -2f, .65f);
+        var targets = GetChildren().OfType<TankUnit>().Where(tank => !tank.IsDestroyed).ToArray();
+        _nukeDetonating = true;
+        try
+        {
+            foreach (var tank in targets)
+            {
+                var dx = tank.GlobalPosition.X - position.X;
+                var dz = tank.GlobalPosition.Z - position.Z;
+                if (NukeRules.InBlast(dx, dz)) tank.TakeDamage(tank.Health.Current);
+            }
+        }
+        finally { _nukeDetonating = false; }
+    }
+
+    private void PlaceMine(Vector3 position, TankUnit owner)
+    {
+        var mine = new TankMine { Position = new Vector3(position.X, .19f, position.Z),
+            ProcessMode = ProcessModeEnum.Pausable };
+        AddChild(mine);
+        mine.Exploded += point =>
+        {
+            var explosion = new TankExplosion { RadiusScale = .8f };
+            AddChild(explosion);
+            explosion.GlobalPosition = point + Vector3.Up * .4f;
+            TankAudio.Play("tank_explosion", -10f);
+        };
+        TankAudio.Play("powerup_pickup", -17f, .7f);
+    }
+
     private void OnTankDestroyed(TankUnit tank)
     {
         TryDropPowerUp(tank.GlobalPosition);
-        if (tank.IsPlayer) { EndGame(false); return; }
+        if (tank.IsPlayer)
+        {
+            if (_nukeDetonating) _nuclearDefeatSecondsRemaining = 3f;
+            else EndGame(false);
+            return;
+        }
         var explosion = new TankExplosion { RadiusScale = tank.IsBoss ? 1.7f : 1f };
         AddChild(explosion);
         explosion.GlobalPosition = tank.GlobalPosition + Vector3.Up * (tank.IsBoss ? 1.1f : .55f);
@@ -184,6 +263,8 @@ public partial class TankArena : Node3D
         if (_ended || _player.IsDestroyed) return false;
         if (kind == PowerUpKind.Health) return _player.RestoreHealth(2) > 0;
         if (kind == PowerUpKind.Minigun) return _player.Weapon.ActivateMinigun();
+        if (kind == PowerUpKind.Nuke) return _player.Weapon.GrantNukes();
+        if (kind == PowerUpKind.Mine) return _player.Weapon.GrantMines();
         var nearest = GetChildren().OfType<TankUnit>()
             .Where(tank => !tank.IsPlayer && !tank.IsDestroyed)
             .OrderBy(tank => tank.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition)).FirstOrDefault();
@@ -274,10 +355,12 @@ public partial class TankArena : Node3D
         hudPanel.AddChild(row);
         _healthText = UiStyle.Label("", 31, UiStyle.Gold);
         _reloadText = UiStyle.Label("", 31, UiStyle.Sky);
+        _specialText = UiStyle.Label("", 24, UiStyle.Gold);
         _progressText = UiStyle.Label($"TANKE  0 / {TargetKills}", 31);
         _progressText.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         row.AddChild(_healthText);
         row.AddChild(_reloadText);
+        row.AddChild(_specialText);
         row.AddChild(_progressText);
         _healthText.Text = $"LIV  {new string('♥', _player.Health.Current)}";
         _player.Damaged += health => _healthText.Text = $"LIV  {new string('♥', health)}";
@@ -289,7 +372,7 @@ public partial class TankArena : Node3D
         controlsPanel.OffsetLeft = 220;
         controlsPanel.OffsetRight = -220;
         controlsPanel.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color(0.05f, .1f, .16f, .84f), 12));
-        controlsPanel.AddChild(UiStyle.Label("W/S KØR   A/D DREJ   MUS SIGT   KLIK SKYD   MUSEHJUL ZOOM   ESC PAUSE", 18));
+        controlsPanel.AddChild(UiStyle.Label("W/S KØR   A/D DREJ   MUS SIGT   KLIK SKYD   HØJREKLIK/N ATOM   M MINE   MUSEHJUL ZOOM   ESC PAUSE", 18));
         canvas.AddChild(controlsPanel);
 
         _pauseOverlay = MakeOverlay(canvas, "Pause", true);

@@ -18,6 +18,8 @@ public partial class PowerUpPickup : Node3D
         {
             PowerUpKind.Health => new Color("#6df5a5"),
             PowerUpKind.Missile => new Color("#ffcb59"),
+            PowerUpKind.Nuke => new Color("#f5eb63"),
+            PowerUpKind.Mine => new Color("#ff8d76"),
             _ => new Color("#8df4ff")
         };
         var core = new MeshInstance3D
@@ -45,6 +47,20 @@ public partial class PowerUpPickup : Node3D
                 MaterialOverride = Glow(color)
             };
             icon.AddChild(tip);
+        }
+        else if (Kind == PowerUpKind.Nuke)
+        {
+            IconBlock(icon, new Vector3(.22f, .78f, .17f), Vector3.Zero, color);
+            IconBlock(icon, new Vector3(.76f, .22f, .17f), Vector3.Zero, color);
+            icon.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = .17f, Height = .34f },
+                MaterialOverride = Glow(Colors.White) });
+        }
+        else if (Kind == PowerUpKind.Mine)
+        {
+            icon.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = .4f, BottomRadius = .48f, Height = .19f },
+                MaterialOverride = Glow(color) });
+            icon.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = .17f, Height = .34f },
+                Position = new Vector3(0, .15f, 0), MaterialOverride = Glow(Colors.White) });
         }
         else
         {

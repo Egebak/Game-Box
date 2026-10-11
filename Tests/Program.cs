@@ -36,7 +36,20 @@ Check(PowerUpDropRules.Roll(new Random(1), 1) is not null, "certain chance alway
 var dropKinds = new System.Collections.Generic.HashSet<PowerUpKind>();
 var dropRandom = new Random(4);
 for (var roll = 0; roll < 80; roll++) dropKinds.Add(PowerUpDropRules.Roll(dropRandom, 1)!.Value);
-Check(dropKinds.Count == 3 && dropKinds.Contains(PowerUpKind.Minigun), "all three power-ups can drop");
+Check(dropKinds.Count == 5 && dropKinds.Contains(PowerUpKind.Nuke) && dropKinds.Contains(PowerUpKind.Mine),
+    "all five power-ups can drop");
+Check(Math.Abs(NukeRules.BlastRadius - 10.2f) < .001f, "nuclear blast spans four tank lengths");
+Check(NukeRules.InBlast(0f, 10.2f) && !NukeRules.InBlast(0f, 10.21f),
+    "nuclear blast includes its edge but not tanks outside it");
+var mineSupply = new MineSupply();
+mineSupply.Grant();
+Check(mineSupply.Active && mineSupply.Remaining == 10, "mine pickup grants ten placements");
+for (var mine = 0; mine < 10; mine++) Check(mineSupply.TryPlace(), $"mine {mine + 1} can be placed");
+Check(!mineSupply.TryPlace(), "eleventh mine is blocked");
+mineSupply.Grant();
+mineSupply.Tick(15f);
+Check(!mineSupply.Active && mineSupply.Remaining == 0 && !mineSupply.TryPlace(),
+    "mine placement expires after fifteen seconds");
 var minigunTimer = new MinigunTimer();
 minigunTimer.Activate();
 minigunTimer.Tick(14f);

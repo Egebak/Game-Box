@@ -11,18 +11,25 @@ public partial class TankWeapon : Node3D
     private ShotMagazine _normalMagazine = null!;
     private ShotMagazine _minigunMagazine = null!;
     private readonly MinigunTimer _minigunTimer = new();
+    private readonly MineSupply _mines = new();
+    private int _nukesRemaining;
     private readonly Dictionary<int, (int Remaining, ShotMagazine Magazine)> _remainingShellsByVolley = new();
     private int _nextVolleyId;
     public TankUnit Tank { get; set; } = null!;
     private ShotMagazine ActiveMagazine => IsMinigunActive ? _minigunMagazine : _normalMagazine;
     public bool IsMinigunActive => Tank.IsPlayer && _minigunTimer.Active;
     public float MinigunSecondsRemaining => _minigunTimer.SecondsRemaining;
+    public int NukesRemaining => _nukesRemaining;
+    public int MinesRemaining => _mines.Remaining;
+    public float MineSecondsRemaining => _mines.SecondsRemaining;
     public int ReadyCount => ActiveMagazine.ReadyCount;
     public int InFlightCount => ActiveMagazine.InFlightCount;
     public int Capacity => ActiveMagazine.Capacity;
     public int BarrelCount => _muzzles.Length;
     public float ReloadFraction => ActiveMagazine.NextChargeFraction;
     public event Action<Vector3, Vector3, TankUnit, int, int>? Fired;
+    public event Action<Vector3, Vector3, TankUnit>? NukeFired;
+    public event Action<Vector3, TankUnit>? MinePlaced;
 
     public override void _Ready()
     {
@@ -40,6 +47,7 @@ public partial class TankWeapon : Node3D
     public override void _PhysicsProcess(double delta)
     {
         _minigunTimer.Tick((float)delta);
+        _mines.Tick((float)delta);
         _minigunMagazine.Tick((float)delta);
         if (_normalMagazine.Tick((float)delta) > 0 && Tank.IsPlayer && !Tank.IsDestroyed && !IsMinigunActive)
             TankAudio.Play("reload_ready", -13f);
@@ -49,6 +57,35 @@ public partial class TankWeapon : Node3D
     {
         if (!Tank.IsPlayer || Tank.IsDestroyed) return false;
         _minigunTimer.Activate();
+        return true;
+    }
+
+    public bool GrantNukes()
+    {
+        if (!Tank.IsPlayer || Tank.IsDestroyed) return false;
+        _nukesRemaining += 2;
+        return true;
+    }
+
+    public bool TryFireNuke()
+    {
+        if (!Tank.IsPlayer || Tank.IsDestroyed || _nukesRemaining <= 0) return false;
+        _nukesRemaining--;
+        NukeFired?.Invoke(_muzzles[0].GlobalPosition, -_muzzles[0].GlobalBasis.Z, Tank);
+        return true;
+    }
+
+    public bool GrantMines()
+    {
+        if (!Tank.IsPlayer || Tank.IsDestroyed) return false;
+        _mines.Grant();
+        return true;
+    }
+
+    public bool TryPlaceMine()
+    {
+        if (!Tank.IsPlayer || Tank.IsDestroyed || !_mines.TryPlace()) return false;
+        MinePlaced?.Invoke(Tank.GlobalPosition + Tank.GlobalBasis.Z * 2.3f, Tank);
         return true;
     }
 

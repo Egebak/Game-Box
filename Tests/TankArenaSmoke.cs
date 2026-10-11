@@ -223,7 +223,73 @@ public partial class TankArenaSmoke : Node
                 "normal three-shot mode returns after fifteen seconds");
             Check(minigunPlayer.Weapon.TryFire(), "normal shells can fire after minigun expires");
             minigunArena.QueueFree();
-            await ToSignal(GetTree().CreateTimer(1.5), SceneTreeTimer.SignalName.Timeout);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            var mineArena = GD.Load<PackedScene>("res://Games/TankArena/Scenes/TankArena.tscn").Instantiate<TankArena>();
+            mineArena.PowerUpDropChance = 0f;
+            AddChild(mineArena);
+            var minePlayer = mineArena.GetChildren().OfType<TankUnit>().Single(x => x.IsPlayer);
+            mineArena.AddChild(new PowerUpPickup { Kind = PowerUpKind.Mine, Player = minePlayer,
+                TryCollect = mineArena.TryCollectPowerUp, Position = new Vector3(0, 2.3f, 0) });
+            for (var frame = 0; frame < 4 && minePlayer.Weapon.MinesRemaining == 0; frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(minePlayer.Weapon.MinesRemaining == 10 && minePlayer.Weapon.MineSecondsRemaining > 14f,
+                "mine pickup grants ten mines for fifteen seconds");
+            mineArena._Input(new InputEventKey { Keycode = Key.M, Pressed = true });
+            var placedMine = mineArena.GetChildren().OfType<TankMine>().Single();
+            Check(minePlayer.Weapon.MinesRemaining == 9, "M places one mine");
+            var mineVictim = mineArena.GetChildren().OfType<TankUnit>().First(x => !x.IsPlayer);
+            mineVictim.GetChildren().OfType<EnemyBrain>().Single().ProcessMode = ProcessModeEnum.Disabled;
+            mineVictim.GlobalPosition = new Vector3(placedMine.GlobalPosition.X, .75f, placedMine.GlobalPosition.Z);
+            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(mineVictim.IsDestroyed, "enemy driving over a mine takes three damage");
+            mineArena._Input(new InputEventKey { Keycode = Key.M, Pressed = true });
+            var playerMine = mineArena.GetChildren().OfType<TankMine>().Single();
+            minePlayer.GlobalPosition = new Vector3(playerMine.GlobalPosition.X, .75f, playerMine.GlobalPosition.Z);
+            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(minePlayer.Health.Current == 2, "player driving over a mine takes three damage");
+            mineArena._Input(new InputEventKey { Keycode = Key.M, Pressed = true });
+            Check(mineArena.GetChildren().OfType<TankMine>().Count() == 1, "a third mine remains on the ground");
+            minePlayer.Weapon._PhysicsProcess(15);
+            Check(minePlayer.Weapon.MinesRemaining == 0 && !minePlayer.Weapon.TryPlaceMine() &&
+                mineArena.GetChildren().OfType<TankMine>().Count() == 1,
+                "mine ability expires while placed mines remain");
+            mineArena.QueueFree();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            var nukeArena = GD.Load<PackedScene>("res://Games/TankArena/Scenes/TankArena.tscn").Instantiate<TankArena>();
+            nukeArena.PowerUpDropChance = 0f;
+            AddChild(nukeArena);
+            var nukePlayer = nukeArena.GetChildren().OfType<TankUnit>().Single(x => x.IsPlayer);
+            foreach (var enemy in nukeArena.GetChildren().OfType<TankUnit>().Where(x => !x.IsPlayer))
+                enemy.GetChildren().OfType<EnemyBrain>().Single().ProcessMode = ProcessModeEnum.Disabled;
+            var nukeTargets = nukeArena.GetChildren().OfType<TankUnit>().Where(x => !x.IsPlayer).ToArray();
+            nukeTargets[0].GlobalPosition = new Vector3(0, .75f, -8);
+            nukeTargets[1].GlobalPosition = new Vector3(4, .75f, -12);
+            nukeTargets[2].GlobalPosition = new Vector3(20, .75f, 20);
+            nukeArena.AddChild(new PowerUpPickup { Kind = PowerUpKind.Nuke, Player = nukePlayer,
+                TryCollect = nukeArena.TryCollectPowerUp, Position = new Vector3(0, 2.3f, 0) });
+            for (var frame = 0; frame < 4 && nukePlayer.Weapon.NukesRemaining == 0; frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(nukePlayer.Weapon.NukesRemaining == 2, "nuclear pickup grants two shots");
+            nukePlayer.Turret.GlobalRotation = Vector3.Zero;
+            nukeArena._Input(new InputEventMouseButton { ButtonIndex = MouseButton.Right, Pressed = true });
+            var nuke = nukeArena.GetChildren().OfType<NukeProjectile>().Single();
+            Check(nukePlayer.Weapon.NukesRemaining == 1 && nuke.Speed == nukeArena.PlayerShellSpeed * .5f,
+                "right click launches one nuke at half shell speed");
+            for (var frame = 0; frame < 90 && !nukeTargets[0].IsDestroyed; frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(nukeTargets[0].IsDestroyed && nukeTargets[1].IsDestroyed && !nukeTargets[2].IsDestroyed,
+                "nuclear blast destroys nearby tanks but spares distant tanks");
+            Check(nukePlayer.IsDestroyed && nukeArena.GetChildren().OfType<NuclearMushroomCloud>().Any(),
+                "nuclear blast destroys player and creates a mushroom cloud");
+            var nukeResult = nukeArena.GetChildren().OfType<CanvasLayer>().Single().GetNode<Control>("ResultOverlay");
+            Check(!nukeResult.Visible, "mushroom cloud is visible before defeat overlay");
+            await ToSignal(GetTree().CreateTimer(3.2), SceneTreeTimer.SignalName.Timeout);
+            Check(nukeResult.Visible && GetTree().Paused, "nuclear self-hit ends in defeat after cloud appears");
+            GetTree().Paused = false;
+            nukeArena.QueueFree();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             GD.Print("TANK_ARENA_SMOKE_PASS");
             GetTree().Quit(0);
         }

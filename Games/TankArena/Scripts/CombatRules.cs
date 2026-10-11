@@ -45,7 +45,7 @@ public sealed class HealthModel
     }
 }
 
-public enum PowerUpKind { Health, Missile, Minigun }
+public enum PowerUpKind { Health, Missile, Minigun, Nuke, Mine }
 
 public static class PowerUpDropRules
 {
@@ -55,7 +55,7 @@ public static class PowerUpDropRules
     {
         if (chance < 0 || chance > 1) throw new ArgumentOutOfRangeException(nameof(chance));
         if (random.NextDouble() >= chance) return null;
-        return (PowerUpKind)random.Next(3);
+        return (PowerUpKind)random.Next(5);
     }
 }
 
@@ -71,6 +71,42 @@ public sealed class MinigunTimer
     {
         if (delta < 0f) throw new ArgumentOutOfRangeException(nameof(delta));
         SecondsRemaining = Math.Max(0f, SecondsRemaining - delta);
+    }
+}
+
+public static class NukeRules
+{
+    public const float TankLength = 2.55f;
+    public const float BlastRadius = 4f * TankLength;
+    public static bool InBlast(float dx, float dz) => dx * dx + dz * dz <= BlastRadius * BlastRadius;
+}
+
+public sealed class MineSupply
+{
+    public const int PickupCount = 10;
+    public const float DurationSeconds = 15f;
+    public int Remaining { get; private set; }
+    public float SecondsRemaining { get; private set; }
+    public bool Active => Remaining > 0 && SecondsRemaining > 0f;
+
+    public void Grant()
+    {
+        Remaining = PickupCount;
+        SecondsRemaining = DurationSeconds;
+    }
+
+    public void Tick(float delta)
+    {
+        if (delta < 0f) throw new ArgumentOutOfRangeException(nameof(delta));
+        SecondsRemaining = Math.Max(0f, SecondsRemaining - delta);
+        if (SecondsRemaining <= 0f) Remaining = 0;
+    }
+
+    public bool TryPlace()
+    {
+        if (!Active) return false;
+        Remaining--;
+        return true;
     }
 }
 
