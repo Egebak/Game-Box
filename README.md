@@ -6,9 +6,22 @@ On the first launch, Game Box asks for the child's name. It saves the name local
 
 ## Run
 
-1. Open `project.godot` in the Godot 4.6.3 .NET editor.
-2. Build the C# solution in Godot, or run `dotnet build GameBox.csproj`.
-3. Press F6/F5 in Godot to play the current/main scene. The main scene is the Game Box launcher.
+1. Install the **Godot 4.6.3 .NET editor** (the regular Godot editor does not support C#) and the **.NET 8 SDK**.
+2. Clone the repository and open `project.godot` in that editor. Allow the first asset import to finish.
+3. Build C# with the Build button in Godot, or run `dotnet restore GameBox.sln` and `dotnet build GameBox.sln` in the project folder.
+4. Press F5 to start the Game Box launcher.
+
+If Godot says **“Load failed due to missing dependencies”** on a fresh clone, check that you opened the .NET editor and completed the C# build before running. The generated `.godot/` import cache and compiled assemblies are intentionally not in Git; Godot and the .NET SDK recreate them locally. If the build fails, check the Godot Output/MSBuild panel or run `dotnet build GameBox.sln` to see the underlying error.
+
+## Windows standalone build
+
+Install the matching **Godot 4.6.3 .NET export templates** in the editor, then choose **Project → Export → Windows Desktop**. The checked-in `export_presets.cfg` includes the JSON learning data. For a command-line release export, run:
+
+```powershell
+godot --headless --path . --export-release "Windows Desktop" "build/windows/Game Box.exe"
+```
+
+Distribute the **entire** `build/windows` folder: `Game Box.exe`, `Game Box.pck`, and `data_GameBox_windows_x86_64/` must stay together. The exported game includes its .NET runtime, so players do not need the Godot editor or .NET SDK.
 
 The desktop viewport is designed at 1920×1080 and opens in a 1280×720 window. UI uses containers and stretches with the window.
 

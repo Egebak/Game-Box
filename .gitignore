@@ -2,6 +2,7 @@
 .vs/
 bin/
 obj/
+/build/
 Tests/bin/
 Tests/obj/
 *.user
