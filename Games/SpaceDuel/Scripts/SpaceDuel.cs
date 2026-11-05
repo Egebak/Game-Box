@@ -221,6 +221,11 @@ public partial class SpaceDuel : Node2D
         ResolveShipCollision();
         UpdateLasers(step);
         UpdateTorpedoes(step);
+        ResolveLaserTorpedoCollisions();
+        ResolveLaserShipHits();
+        ResolveTorpedoShipHits();
+        _lasers.RemoveAll(laser => !laser.Alive);
+        _torpedoes.RemoveAll(torpedo => !torpedo.Alive);
         UpdateHud();
     }
 
@@ -365,7 +370,33 @@ public partial class SpaceDuel : Node2D
             if (!laser.Alive) continue;
             laser.Position = Wrap(laser.Position + laser.Velocity * delta);
             laser.Seconds -= delta;
-            if (laser.Seconds <= 0f) { laser.Alive = false; continue; }
+            if (laser.Seconds <= 0f) laser.Alive = false;
+        }
+    }
+
+    private void ResolveLaserTorpedoCollisions()
+    {
+        const float hitRadius = 15f;
+        foreach (var laser in _lasers)
+        {
+            if (!laser.Alive) continue;
+            foreach (var torpedo in _torpedoes)
+            {
+                if (!torpedo.Alive ||
+                    ShortestOffset(laser.Position, torpedo.Position).LengthSquared() >
+                    hitRadius * hitRadius) continue;
+                laser.Alive = false;
+                ExplodeTorpedo(torpedo);
+                break;
+            }
+        }
+    }
+
+    private void ResolveLaserShipHits()
+    {
+        foreach (var laser in _lasers)
+        {
+            if (!laser.Alive) continue;
             foreach (var victim in _ships)
             {
                 if (victim.Destroyed || victim.ShieldSeconds > 0f ||
@@ -379,7 +410,6 @@ public partial class SpaceDuel : Node2D
                 break;
             }
         }
-        _lasers.RemoveAll(laser => !laser.Alive);
     }
 
     private void UpdateTorpedoes(float delta)
@@ -410,6 +440,14 @@ public partial class SpaceDuel : Node2D
             torpedo.Position = Wrap(torpedo.Position + torpedo.Velocity * delta);
             torpedo.Trail.Add(torpedo.Position);
             if (torpedo.Trail.Count > 15) torpedo.Trail.RemoveAt(0);
+        }
+    }
+
+    private void ResolveTorpedoShipHits()
+    {
+        foreach (var torpedo in _torpedoes)
+        {
+            if (!torpedo.Alive) continue;
             foreach (var victim in _ships)
             {
                 if (victim.Destroyed || victim.ShieldSeconds > 0f ||
@@ -421,7 +459,6 @@ public partial class SpaceDuel : Node2D
                 break;
             }
         }
-        _torpedoes.RemoveAll(torpedo => !torpedo.Alive);
     }
 
     private void ExplodeTorpedo(Torpedo torpedo)

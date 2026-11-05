@@ -41,6 +41,42 @@ public partial class SpaceDuelSmoke : Node
             duel.StartMatch(true);
             duel._PhysicsProcess(1.3);
             duel.PlaceShipForTest(0, new Vector2(200f, 300f), Vector2.Zero);
+            duel.PlaceShipForTest(1, new Vector2(300f, 300f), Vector2.Zero);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = true });
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.KpAdd, Pressed = true });
+            for (var i = 0; i < 5 &&
+                (duel.LasersFired(0) == 0 || duel.TorpedoesFired(1) == 0); i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = false });
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.KpAdd, Pressed = false });
+            for (var i = 0; i < 6; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(duel.LasersFired(0) > 0 && duel.TorpedoesFired(1) > 0 &&
+                duel.ActiveLasers == 0 && duel.ActiveTorpedoes == 0 && duel.ActiveBursts > 0,
+                "laser intercepts and explodes an opposing torpedo");
+            Check(duel.ShipHealth(0) == SpaceRules.ShipHealth &&
+                duel.ShipHealth(1) == SpaceRules.ShipHealth,
+                "laser torpedo interception does not damage either ship");
+
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
+            duel.PlaceShipForTest(0, new Vector2(200f, 300f), Vector2.Zero);
+            duel.PlaceShipForTest(1, new Vector2(800f, 700f), Vector2.Zero);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = true });
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Shift, Pressed = true });
+            for (var i = 0; i < 5 &&
+                (duel.LasersFired(0) == 0 || duel.TorpedoesFired(0) == 0); i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = false });
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Shift, Pressed = false });
+            for (var i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(duel.LasersFired(0) > 0 && duel.TorpedoesFired(0) > 0 &&
+                duel.ActiveLasers == 0 && duel.ActiveTorpedoes == 0 && duel.ActiveBursts > 0,
+                "laser can also detonate its owner's torpedo");
+
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
+            duel._PhysicsProcess(1.3);
+            duel.PlaceShipForTest(0, new Vector2(200f, 300f), Vector2.Zero);
             duel.PlaceShipForTest(1, new Vector2(800f, 700f), Vector2.Zero);
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = true });
             for (var i = 0; i < 4 && duel.LasersFired(0) == 0; i++)
