@@ -181,9 +181,32 @@ public partial class SpaceDuelSmoke : Node
 
             duel.ReturnToMenu();
             duel.StartMatch(false);
+            var soloStart = duel.ShipPosition(1);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Up, Pressed = true });
+            for (var i = 0; i < 25; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Up, Pressed = false });
+            Check(!duel.TwoPlayerMode && duel.ShipPosition(1).X < soloStart.X &&
+                duel.ShipEnergy(1) < SpaceRules.MaximumEnergy,
+                "solo uses arrow keys for the right-hand player ship");
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Enter, Pressed = true });
+            for (var i = 0; i < 4 && duel.LasersFired(1) == 0; i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Enter, Pressed = false });
+            Check(duel.LasersFired(1) > 0, "solo Enter fires the player ship's laser");
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.KpAdd, Pressed = true });
+            for (var i = 0; i < 4 && duel.TorpedoesFired(1) == 0; i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.KpAdd, Pressed = false });
+            Check(duel.TorpedoesFired(1) > 0, "solo plus launches the player ship's torpedo");
             for (var i = 0; i < 65; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
-            Check(!duel.TwoPlayerMode && duel.ShipVelocity(1).Length() > 0f,
-                "solo match uses an active AI opponent");
+            Check(duel.ShipVelocity(0).Length() > 0f,
+                "solo match uses an active left-hand AI opponent");
+            var soloLabels = duel.GetNode<Control>("DuelUi/MatchHud")
+                .FindChildren("*", "Label", true, false).OfType<Label>().Select(label => label.Text).ToArray();
+            Check(soloLabels.Any(text => text.StartsWith("COMPUTER")) &&
+                soloLabels.Any(text => text.StartsWith("SPILLER")) &&
+                soloLabels.Any(text => text.StartsWith("SOLO: PILE")),
+                "solo HUD labels the ships and arrow-key controls correctly");
 
             duel.ReturnToMenu();
             duel.StartMatch(true);

@@ -86,6 +86,7 @@ public partial class SpaceDuel : Node2D
     private Label[] _statusLabels = null!;
     private ProgressBar[] _healthBars = null!;
     private ProgressBar[] _energyBars = null!;
+    private Label _controlsHint = null!;
     private Label _resultTitle = null!;
     private Label _resultStats = null!;
 
@@ -215,7 +216,9 @@ public partial class SpaceDuel : Node2D
             ship.LaserCooldown = Mathf.Max(0f, ship.LaserCooldown - step);
             ship.TorpedoCooldown = Mathf.Max(0f, ship.TorpedoCooldown - step);
             ship.ShieldSeconds = Mathf.Max(0f, ship.ShieldSeconds - step);
-            var controls = ship.Index == 0 ? LeftControls() : _twoPlayers ? RightControls() : AiControls(ship);
+            var controls = _twoPlayers
+                ? (ship.Index == 0 ? LeftControls() : RightControls())
+                : (ship.Index == 1 ? RightControls() : AiControls(ship));
             UpdateShip(ship, controls, step);
         }
         ResolveShipCollision();
@@ -271,7 +274,7 @@ public partial class SpaceDuel : Node2D
 
     private Controls AiControls(Ship ship)
     {
-        var target = _ships[0];
+        var target = _ships[1 - ship.Index];
         if (target.Destroyed) return new Controls(1f, 0f, 0f, false, false);
         var offset = ShortestOffset(ship.Position, target.Position);
         var distance = offset.Length();
@@ -516,7 +519,7 @@ public partial class SpaceDuel : Node2D
     private void ShowResults()
     {
         var winner = _ships[_score.Winner];
-        _resultTitle.Text = $"SEJR!  SPILLER {winner.Index + 1} VINDER";
+        _resultTitle.Text = $"SEJR!  {ShipLabel(winner.Index)} VINDER";
         _resultTitle.AddThemeColorOverride("font_color", ShipColor(winner.Index));
         _resultStats.Text = $"Lasere affyret: {winner.LasersFired}     Lasere ramt: {winner.LasersHit}     " +
             $"Torpedoer affyret: {winner.TorpedoesFired}     Torpedoer ramt: {winner.TorpedoesHit}\n" +
@@ -525,17 +528,23 @@ public partial class SpaceDuel : Node2D
 
     private void UpdateHud()
     {
+        _controlsHint.Text = _twoPlayers
+            ? "WASD / PILE: STYR   ·   SPACE / ENTER: LASER   ·   SHIFT / +: TORPEDO   ·   ESC: PAUSE"
+            : "SOLO: PILE STYRER   ·   ENTER: LASER   ·   +: TORPEDO   ·   ESC: PAUSE";
         for (var i = 0; i < 2; i++)
         {
             var ship = _ships[i];
-            _scoreLabels[i].Text = $"{(_twoPlayers || i == 0 ? $"SPILLER {i + 1}" : "COMPUTER")}   {_score.Kills(i)} / {SpaceRules.WinningKills}";
-            _statusLabels[i].Text = i == 1 && !_twoPlayers
+            _scoreLabels[i].Text = $"{ShipLabel(i)}   {_score.Kills(i)} / {SpaceRules.WinningKills}";
+            _statusLabels[i].Text = i == 0 && !_twoPlayers
                 ? $"AI: {new[] { "Angrib", "Kreds", "Hold afstand" }[_aiStyle]}"
                 : $"Fart: {Mathf.RoundToInt(ship.Velocity.Length())}";
             _healthBars[i].Value = ship.Health;
             _energyBars[i].Value = ship.Energy.Current;
         }
     }
+
+    private string ShipLabel(int index) => _twoPlayers
+        ? $"SPILLER {index + 1}" : index == 1 ? "SPILLER" : "COMPUTER";
 
     private void BuildUi()
     {
@@ -584,6 +593,7 @@ public partial class SpaceDuel : Node2D
         }
         column.AddChild(UiStyle.Label("P1: WASD · Space laser · Shift torpedo", 23));
         column.AddChild(UiStyle.Label("P2: Pile · Enter/Num0 laser · + torpedo", 23));
+        column.AddChild(UiStyle.Label("Solo: du styrer P2 med pile, Enter og +", 23, UiStyle.Sky));
     }
 
     private void BuildHud(CanvasLayer layer)
@@ -617,10 +627,10 @@ public partial class SpaceDuel : Node2D
         goal.Position = new Vector2(_arenaSize.X * .5f - 190f, 32f);
         goal.CustomMinimumSize = new Vector2(380f, 42f);
         _hud.AddChild(goal);
-        var controls = UiStyle.Label("WASD / PILE: STYR   ·   SPACE / ENTER: LASER   ·   SHIFT / +: TORPEDO   ·   ESC: PAUSE", 22);
-        controls.Position = new Vector2(170f, _arenaSize.Y - 55f);
-        controls.CustomMinimumSize = new Vector2(_arenaSize.X - 340f, 40f);
-        _hud.AddChild(controls);
+        _controlsHint = UiStyle.Label("", 22);
+        _controlsHint.Position = new Vector2(170f, _arenaSize.Y - 55f);
+        _controlsHint.CustomMinimumSize = new Vector2(_arenaSize.X - 340f, 40f);
+        _hud.AddChild(_controlsHint);
     }
 
     private static ProgressBar MakeBar(float maximum, Color color)
