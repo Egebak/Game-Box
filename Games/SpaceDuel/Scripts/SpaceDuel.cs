@@ -16,6 +16,8 @@ public partial class SpaceDuel : Node2D
         public Vector2 Position;
         public Vector2 Velocity;
         public float Angle;
+        public float AngularVelocity;
+        public float CollisionCooldown;
         public int Health = SpaceRules.ShipHealth;
         public readonly EnergyReserve Energy = new();
         public float LaserCooldown;
@@ -100,14 +102,22 @@ public partial class SpaceDuel : Node2D
         }
     }
     public int ActiveLasers => _lasers.Count;
+    public int ActiveBursts => _bursts.Count;
     public int Kills(int player) => _score.Kills(player);
     public Vector2 ShipPosition(int player) => _ships[player].Position;
     public Vector2 ShipVelocity(int player) => _ships[player].Velocity;
     public float ShipAngle(int player) => _ships[player].Angle;
+    public float ShipSpin(int player) => _ships[player].AngularVelocity;
     public int ShipHealth(int player) => _ships[player].Health;
     public float ShipEnergy(int player) => _ships[player].Energy.Current;
     public int LasersFired(int player) => _ships[player].LasersFired;
     public int TorpedoesFired(int player) => _ships[player].TorpedoesFired;
+
+    internal void PlaceShipForTest(int player, Vector2 position, Vector2 velocity)
+    {
+        _ships[player].Position = Wrap(position);
+        _ships[player].Velocity = velocity;
+    }
 
     public override void _Ready()
     {
@@ -208,6 +218,7 @@ public partial class SpaceDuel : Node2D
             var controls = ship.Index == 0 ? LeftControls() : _twoPlayers ? RightControls() : AiControls(ship);
             UpdateShip(ship, controls, step);
         }
+        ResolveShipCollision();
         UpdateLasers(step);
         UpdateTorpedoes(step);
         UpdateHud();
@@ -231,6 +242,8 @@ public partial class SpaceDuel : Node2D
         ship.Angle = fresh.Angle;
         ship.Health = SpaceRules.ShipHealth;
         ship.Energy.Refill();
+        ship.AngularVelocity = 0f;
+        ship.CollisionCooldown = 0f;
         ship.ShieldSeconds = 1.2f;
         ship.Destroyed = false;
         ship.Thrusting = false;
@@ -277,8 +290,11 @@ public partial class SpaceDuel : Node2D
 
     private void UpdateShip(Ship ship, Controls controls, float delta)
     {
-        ship.Angle = Mathf.Wrap(ship.Angle + controls.Turn * SpaceRules.TurnSpeed * delta,
+        ship.Angle = Mathf.Wrap(ship.Angle +
+            (controls.Turn * SpaceRules.TurnSpeed + ship.AngularVelocity) * delta,
             -Mathf.Pi, Mathf.Pi);
+        ship.AngularVelocity *= Mathf.Exp(-1.3f * delta);
+        ship.CollisionCooldown = Mathf.Max(0f, ship.CollisionCooldown - delta);
         var forward = new Vector2(Mathf.Cos(ship.Angle), Mathf.Sin(ship.Angle));
         var thrustFraction = controls.Thrust > 0f
             ? ship.Energy.SpendContinuous(SpaceRules.ThrustEnergyPerSecond, delta) : 0f;
@@ -297,7 +313,7 @@ public partial class SpaceDuel : Node2D
         {
             _lasers.Add(new Laser { Owner = ship.Index,
                 Position = Wrap(ship.Position + forward * 30f),
-                Velocity = ship.Velocity + forward * 760f });
+                Velocity = ship.Velocity + forward * SpaceRules.LaserSpeed });
             ship.LasersFired++;
             ship.LaserCooldown = .17f;
             SoundEffects.Play("player_fire", -18f, 1.9f);
@@ -306,12 +322,40 @@ public partial class SpaceDuel : Node2D
         {
             _torpedoes.Add(new Torpedo { Owner = ship.Index,
                 Position = Wrap(ship.Position + forward * 33f),
-                Velocity = ship.Velocity + forward * 185f,
+                Velocity = ship.Velocity + forward * SpaceRules.TorpedoLaunchSpeed,
                 Angle = ship.Angle });
             ship.TorpedoesFired++;
             ship.TorpedoCooldown = .8f;
             SoundEffects.Play("missile_launch", -9f);
         }
+    }
+
+    private void ResolveShipCollision()
+    {
+        var first = _ships[0];
+        var second = _ships[1];
+        if (first.Destroyed || second.Destroyed) return;
+        var offset = ShortestOffset(first.Position, second.Position);
+        var distance = offset.Length();
+        var contactDistance = SpaceRules.ShipRadius * 2f;
+        if (distance >= contactDistance) return;
+        var normal = distance > .001f ? offset / distance : Vector2.Right;
+        var separation = (contactDistance - distance) * .5f + 1f;
+        first.Position = Wrap(first.Position - normal * separation);
+        second.Position = Wrap(second.Position + normal * separation);
+        if (first.CollisionCooldown > 0f || second.CollisionCooldown > 0f) return;
+
+        var approach = (first.Velocity - second.Velocity).Dot(normal);
+        var recoil = Mathf.Clamp(approach * .8f, 105f, 260f);
+        first.Velocity = (first.Velocity - normal * recoil).LimitLength(SpaceRules.MaximumShipSpeed);
+        second.Velocity = (second.Velocity + normal * recoil).LimitLength(SpaceRules.MaximumShipSpeed);
+        var spin = (first.Velocity - second.Velocity).Cross(normal) < 0f ? -1f : 1f;
+        first.AngularVelocity = 4.6f * spin;
+        second.AngularVelocity = -4.6f * spin;
+        first.CollisionCooldown = second.CollisionCooldown = .35f;
+        AddBurst(Wrap(first.Position + normal * (SpaceRules.ShipRadius + 1f)),
+            new Color("#ffb87d"), 37f, .4f);
+        SoundEffects.Play("impact_metal", -12f, .8f);
     }
 
     private void UpdateLasers(float delta)
@@ -322,15 +366,18 @@ public partial class SpaceDuel : Node2D
             laser.Position = Wrap(laser.Position + laser.Velocity * delta);
             laser.Seconds -= delta;
             if (laser.Seconds <= 0f) { laser.Alive = false; continue; }
-            var victim = _ships[1 - laser.Owner];
-            if (victim.Destroyed || victim.ShieldSeconds > 0f ||
-                ShortestOffset(laser.Position, victim.Position).LengthSquared() >
-                Mathf.Pow(SpaceRules.ShipRadius + 5f, 2f)) continue;
-            laser.Alive = false;
-            _ships[laser.Owner].LasersHit++;
-            AddBurst(laser.Position, new Color("#ff685e"), 22f, .32f);
-            SoundEffects.Play("impact_metal", -17f, 1.5f);
-            DamageShip(victim.Index, SpaceRules.LaserDamage, laser.Owner);
+            foreach (var victim in _ships)
+            {
+                if (victim.Destroyed || victim.ShieldSeconds > 0f ||
+                    ShortestOffset(laser.Position, victim.Position).LengthSquared() >
+                    Mathf.Pow(SpaceRules.ShipRadius + 5f, 2f)) continue;
+                laser.Alive = false;
+                _ships[laser.Owner].LasersHit++;
+                AddBurst(laser.Position, new Color("#ff685e"), 22f, .32f);
+                SoundEffects.Play("impact_metal", -17f, 1.5f);
+                DamageShip(victim.Index, SpaceRules.LaserDamage, laser.Owner);
+                break;
+            }
         }
         _lasers.RemoveAll(laser => !laser.Alive);
     }
@@ -347,11 +394,12 @@ public partial class SpaceDuel : Node2D
                 {
                     var desired = ShortestOffset(torpedo.Position, target.Position).Angle();
                     var correction = Mathf.Clamp(Mathf.AngleDifference(torpedo.Angle, desired),
-                        -5.2f * delta, 5.2f * delta);
+                        -SpaceRules.TorpedoTurnSpeed * delta, SpaceRules.TorpedoTurnSpeed * delta);
                     torpedo.Angle += correction;
                 }
                 var forward = new Vector2(Mathf.Cos(torpedo.Angle), Mathf.Sin(torpedo.Angle));
-                torpedo.Velocity = (torpedo.Velocity + forward * 155f * delta).LimitLength(410f);
+                torpedo.Velocity = (torpedo.Velocity + forward * SpaceRules.TorpedoAcceleration * delta)
+                    .LimitLength(SpaceRules.TorpedoMaximumSpeed);
                 torpedo.Fuel -= delta;
             }
             else
@@ -362,13 +410,16 @@ public partial class SpaceDuel : Node2D
             torpedo.Position = Wrap(torpedo.Position + torpedo.Velocity * delta);
             torpedo.Trail.Add(torpedo.Position);
             if (torpedo.Trail.Count > 15) torpedo.Trail.RemoveAt(0);
-            var victim = _ships[1 - torpedo.Owner];
-            if (victim.Destroyed || victim.ShieldSeconds > 0f ||
-                ShortestOffset(torpedo.Position, victim.Position).LengthSquared() >
-                Mathf.Pow(SpaceRules.ShipRadius + 10f, 2f)) continue;
-            _ships[torpedo.Owner].TorpedoesHit++;
-            ExplodeTorpedo(torpedo);
-            DamageShip(victim.Index, SpaceRules.TorpedoDamage, torpedo.Owner);
+            foreach (var victim in _ships)
+            {
+                if (victim.Destroyed || victim.ShieldSeconds > 0f ||
+                    ShortestOffset(torpedo.Position, victim.Position).LengthSquared() >
+                    Mathf.Pow(SpaceRules.ShipRadius + 10f, 2f)) continue;
+                _ships[torpedo.Owner].TorpedoesHit++;
+                ExplodeTorpedo(torpedo);
+                DamageShip(victim.Index, SpaceRules.TorpedoDamage, torpedo.Owner);
+                break;
+            }
         }
         _torpedoes.RemoveAll(torpedo => !torpedo.Alive);
     }
@@ -393,7 +444,7 @@ public partial class SpaceDuel : Node2D
         victim.Thrusting = false;
         AddBurst(victim.Position, new Color("#ffcf81"), 110f, 1.1f);
         SoundEffects.Play("tank_explosion", -8f);
-        if (!_score.RecordKill(attackerIndex)) return;
+        if (!_score.RecordKill(attackerIndex == victimIndex ? 1 - victimIndex : attackerIndex)) return;
         _phase = SpaceDuelPhase.Finishing;
         _finishSeconds = 3f;
         foreach (var torpedo in _torpedoes) ExplodeTorpedo(torpedo);

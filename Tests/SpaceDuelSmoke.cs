@@ -24,6 +24,65 @@ public partial class SpaceDuelSmoke : Node
             duel.StartMatch(true);
             Check(duel.Phase == SpaceDuelPhase.Playing && duel.TwoPlayerMode,
                 "two-player match starts from the Space Duel menu");
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
+            duel._PhysicsProcess(1.3); // Opening shields wear off.
+            duel.PlaceShipForTest(0, new Vector2(300f, 300f), new Vector2(120f, 0f));
+            duel.PlaceShipForTest(1, new Vector2(330f, 300f), new Vector2(-120f, 0f));
+            duel._PhysicsProcess(1f / 60f);
+            Check(duel.ShipVelocity(0).X < 0f && duel.ShipVelocity(1).X > 0f &&
+                duel.ShipSpin(0) * duel.ShipSpin(1) < 0f && duel.ActiveBursts > 0,
+                "colliding ships burst, recoil, and spin in opposite directions");
+            Check(duel.ShipHealth(0) == SpaceRules.ShipHealth &&
+                duel.ShipHealth(1) == SpaceRules.ShipHealth,
+                "ship collision creates an impact without weapon damage");
+
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
+            duel._PhysicsProcess(1.3);
+            duel.PlaceShipForTest(0, new Vector2(200f, 300f), Vector2.Zero);
+            duel.PlaceShipForTest(1, new Vector2(800f, 700f), Vector2.Zero);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = true });
+            for (var i = 0; i < 4 && duel.LasersFired(0) == 0; i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = false });
+            duel.PlaceShipForTest(0, new Vector2(260f, 300f), Vector2.Zero);
+            for (var i = 0; i < 4; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(duel.ShipHealth(0) == SpaceRules.ShipHealth - SpaceRules.LaserDamage,
+                "launched laser can hit its owner");
+
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
+            duel._PhysicsProcess(1.3);
+            duel.PlaceShipForTest(0, new Vector2(200f, 300f), Vector2.Zero);
+            duel.PlaceShipForTest(1, new Vector2(300f, 300f), Vector2.Zero);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = true });
+            for (var i = 0; i < 4 && duel.LasersFired(0) == 0; i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Space, Pressed = false });
+            for (var i = 0; i < 8; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(duel.ShipHealth(1) == SpaceRules.ShipHealth - SpaceRules.LaserDamage,
+                "launched laser still hits the opposing ship");
+
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
+            duel._PhysicsProcess(1.3);
+            duel.PlaceShipForTest(0, new Vector2(200f, 300f), Vector2.Zero);
+            duel.PlaceShipForTest(1, new Vector2(800f, 700f), Vector2.Zero);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Shift, Pressed = true });
+            for (var i = 0; i < 4 && duel.TorpedoesFired(0) == 0; i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Shift, Pressed = false });
+            duel.PlaceShipForTest(0, new Vector2(260f, 300f), Vector2.Zero);
+            for (var i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Check(duel.ShipHealth(0) == SpaceRules.ShipHealth - SpaceRules.TorpedoDamage,
+                "launched torpedo can hit its owner");
+            duel.DamageShip(0, SpaceRules.ShipHealth, 0);
+            Check(duel.Kills(1) == 1 && duel.Kills(0) == 0,
+                "self-destruction awards the point to the opposing ship");
+
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
             var start = duel.ShipPosition(0);
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.W, Pressed = true });
             for (var i = 0; i < 25; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);

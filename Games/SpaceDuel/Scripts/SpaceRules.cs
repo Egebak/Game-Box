@@ -10,7 +10,8 @@ public static class SpaceRules
     public const int TorpedoDamage = 4;
     public const float MaximumEnergy = 100f;
     public const float EnergyRegenPerSecond = 19f;
-    public const float LaserEnergyCost = 9f;
+    public const float LaserEnergyCost = 4.5f;
+    public const float LaserSpeed = 912f;
     public const float TorpedoEnergyCost = 32f;
     public const float ThrustEnergyPerSecond = 32f;
     public const float BrakeEnergyPerSecond = 22f;
@@ -19,7 +20,11 @@ public static class SpaceRules
     public const float TurnSpeed = 3.1f;
     public const float MaximumShipSpeed = 520f;
     public const float ShipRadius = 22f;
-    public const float TorpedoFuelSeconds = 3.2f;
+    public const float TorpedoLaunchSpeed = 225f;
+    public const float TorpedoAcceleration = 190f;
+    public const float TorpedoMaximumSpeed = 500f;
+    public const float TorpedoTurnSpeed = 7f;
+    public const float TorpedoFuelSeconds = 3.84f;
     public const float TorpedoCoastSeconds = 1.6f;
 
     public static float Wrap(float position, float extent)

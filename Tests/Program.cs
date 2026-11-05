@@ -122,6 +122,11 @@ Check(SpaceRules.WrappedDelta(96f, 4f, 100f) == 8f &&
     "space targeting uses the shortest path across an edge");
 Check(SpaceRules.BrakeAcceleration == SpaceRules.ThrustAcceleration * .5f,
     "space braking is half as strong as acceleration");
+Check(SpaceRules.LaserEnergyCost == 4.5f && SpaceRules.LaserSpeed == 912f,
+    "space lasers cost half as much energy and travel twenty percent faster");
+Check(Math.Abs(SpaceRules.TorpedoFuelSeconds - 3.2f * 1.2f) < .001f &&
+    SpaceRules.TorpedoTurnSpeed > 5.2f && SpaceRules.TorpedoMaximumSpeed > 410f,
+    "space torpedoes have longer fuel, faster steering, and higher speed");
 Check(SpaceRules.TorpedoDamage > SpaceRules.LaserDamage &&
     SpaceRules.TorpedoFuelSeconds > 0f && SpaceRules.TorpedoCoastSeconds > 0f,
     "torpedoes hit harder and coast after fuel runs out");

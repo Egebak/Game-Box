@@ -23,7 +23,7 @@ godot --headless --path . --export-release "Windows Desktop" "build/windows/Game
 
 Distribute the **entire** `build/windows` folder: `Game Box.exe`, `Game Box.pck`, and `data_GameBox_windows_x86_64/` must stay together. The exported game includes its .NET runtime, so players do not need the Godot editor or .NET SDK.
 
-The desktop viewport is designed at 1920×1080 and opens in a 1280×720 window. UI uses containers and stretches with the window.
+The desktop viewport is designed at 1920×1080 and opens maximized, with a 1600×900 window size when restored. The canvas expands with the window while UI containers adapt to the available space.
 
 ## Tank Arena controls
 
@@ -56,7 +56,7 @@ Move close to the glowing work area before clicking. A large red circle marks th
 
 ## Space Duel
 
-Choose **Solo mod computer** or **To spillere** from Space Duel's own menu. Solo randomly selects one of three simple AI behaviors. Each ship has eight health points and a rechargeable energy bar shared by movement and weapons. Momentum carries the ship after thrust stops; braking is half as strong as acceleration. Ships, lasers, and torpedoes wrap around all four arena edges. Lasers deal one damage, while guided torpedoes deal four. Torpedoes steer while they have fuel, then coast briefly and explode.
+Choose **Solo mod computer** or **To spillere** from Space Duel's own menu. Solo randomly selects one of three simple AI behaviors. Each ship has eight health points and a rechargeable energy bar shared by movement and weapons. Momentum carries the ship after thrust stops; braking is half as strong as acceleration. Ships, lasers, and torpedoes wrap around all four arena edges. Ship collisions make a small burst and send both ships recoiling and spinning. Lasers deal one damage, while guided torpedoes deal four. Once launched, either weapon can hit either ship, including its owner; a self-destruction awards the point to the other player. Torpedoes steer while they have fuel, then coast briefly and explode.
 
 | Action | Player 1 | Player 2 |
 | --- | --- | --- |
