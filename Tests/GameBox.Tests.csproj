@@ -10,6 +10,7 @@
     <Compile Remove="ConstructionSmoke.cs" />
     <Compile Remove="NamePromptSmoke.cs" />
     <Compile Remove="WordMissionSmoke.cs" />
+    <Compile Remove="SpaceDuelSmoke.cs" />
     <Compile Include="../Core/MiniGameDefinition.cs" Link="MiniGameDefinition.cs" />
     <Compile Include="../Core/MiniGameRegistry.cs" Link="MiniGameRegistry.cs" />
     <Compile Include="../Core/GameBoxState.cs" Link="GameBoxState.cs" />
@@ -18,6 +19,7 @@
     <Compile Include="../Games/WordMission/Learning/SessionGenerator.cs" Link="SessionGenerator.cs" />
     <None Include="../Games/WordMission/Data/starter.json" Link="starter.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../Games/TankArena/Scripts/CombatRules.cs" Link="CombatRules.cs" />
+    <Compile Include="../Games/SpaceDuel/Scripts/SpaceRules.cs" Link="SpaceRules.cs" />
     <Compile Include="../Games/ConstructionSite/Scripts/ConstructionMission.cs" Link="ConstructionMission.cs" />
   </ItemGroup>
 </Project>

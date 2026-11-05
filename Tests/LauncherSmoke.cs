@@ -4,6 +4,7 @@ using System.Linq;
 using GameBox.Core;
 using GameBox.Games.ConstructionSite;
 using GameBox.Games.TankArena;
+using GameBox.Games.SpaceDuel;
 using GameBox.Games.WordMission;
 using Godot;
 
@@ -38,11 +39,15 @@ public partial class LauncherSmoke : Node
             var wordTile = menu.FindChildren("*", "Button", true, false).OfType<Button>()
                 .Single(x => x.Text.Contains("Ordmission"));
             Check(wordTile.Icon != null, "launcher has Ordmission icon");
+            var spaceTile = menu.FindChildren("*", "Button", true, false).OfType<Button>()
+                .Single(x => x.Text.Contains("Space Duel"));
+            Check(spaceTile.Icon != null, "launcher has Space Duel icon");
 
             var launches = 0;
             var constructionLaunches = 0;
             var returnedFromConstruction = false;
             var returnedFromWord = false;
+            var returnedFromSpace = false;
             tree.SceneChanged += () =>
             {
                 try
@@ -129,6 +134,33 @@ public partial class LauncherSmoke : Node
                         }
                         tree.ProcessFrame += AfterPause;
                     }
+                    else if (scene is SpaceDuel duel)
+                    {
+                        Check(duel.Phase == SpaceDuelPhase.Menu, "Space Duel tile opens its mode menu");
+                        void AfterSpaceMenu()
+                        {
+                            tree.ProcessFrame -= AfterSpaceMenu;
+                            try
+                            {
+                                duel.FindChildren("*", "Button", true, false).OfType<Button>()
+                                    .Single(x => x.Text == "Solo mod computer").EmitSignal(BaseButton.SignalName.Pressed);
+                                Check(duel.Phase == SpaceDuelPhase.Playing,
+                                    "Space Duel solo button starts the match");
+                                duel.ReturnToMenu();
+                                returnedFromSpace = true;
+                                duel.FindChildren("*", "Button", true, false).OfType<Button>()
+                                    .Single(x => x.Text == "Tilbage til Game Box" && x.IsVisibleInTree())
+                                    .EmitSignal(BaseButton.SignalName.Pressed);
+                            }
+                            catch (Exception error)
+                            {
+                                GD.PushError($"LAUNCHER_SMOKE_FAIL: {error}");
+                                RestoreSave();
+                                tree.Quit(1);
+                            }
+                        }
+                        tree.ProcessFrame += AfterSpaceMenu;
+                    }
                     else if (scene is MainMenu)
                     {
                         Check(!tree.Paused, "return clears pause and reopens Game Box");
@@ -143,6 +175,12 @@ public partial class LauncherSmoke : Node
                             var tankTile = scene.FindChildren("*", "Button", true, false).OfType<Button>()
                                 .Single(x => x.Text.Contains("Tank Arena"));
                             tankTile.EmitSignal(BaseButton.SignalName.Pressed);
+                        }
+                        else if (launches > 0 && !returnedFromSpace)
+                        {
+                            var duelTile = scene.FindChildren("*", "Button", true, false).OfType<Button>()
+                                .Single(x => x.Text.Contains("Space Duel"));
+                            duelTile.EmitSignal(BaseButton.SignalName.Pressed);
                         }
                         else
                         {

@@ -11,5 +11,6 @@
     <Compile Include="Tests/ConstructionSmoke.cs" />
     <Compile Include="Tests/NamePromptSmoke.cs" />
     <Compile Include="Tests/WordMissionSmoke.cs" />
+    <Compile Include="Tests/SpaceDuelSmoke.cs" />
   </ItemGroup>
 </Project>

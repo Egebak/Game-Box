@@ -32,6 +32,9 @@ public sealed class MiniGameRegistry
         registry.Register(new MiniGameDefinition("word-mission", "Ordmission",
             "res://Games/WordMission/Scenes/WordMission.tscn",
             "res://Shared/Assets/wordmission.svg", "Find lyde og byg ord!"));
+        registry.Register(new MiniGameDefinition("space-duel", "Space Duel",
+            "res://Games/SpaceDuel/Scenes/SpaceDuel.tscn",
+            "res://Shared/Assets/spaceduel.svg", "Rumskibe, lasere og torpedoer!"));
         return registry;
     }
 }

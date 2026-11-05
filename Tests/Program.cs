@@ -3,6 +3,7 @@ using System.IO;
 using GameBox.Core;
 using GameBox.Games.TankArena;
 using GameBox.Games.ConstructionSite;
+using GameBox.Games.SpaceDuel;
 
 var count = 0;
 void Check(bool condition, string name)
@@ -114,7 +115,36 @@ minigunMagazine.ShellEnded();
 Check(minigunMagazine.TryFire(), "an ended minigun shot frees a flight slot");
 
 var registry = MiniGameRegistry.CreateDefault();
+Check(SpaceRules.Wrap(-4f, 100f) == 96f && SpaceRules.Wrap(104f, 100f) == 4f,
+    "space arena wraps through both edges");
+Check(SpaceRules.WrappedDelta(96f, 4f, 100f) == 8f &&
+    SpaceRules.WrappedDelta(4f, 96f, 100f) == -8f,
+    "space targeting uses the shortest path across an edge");
+Check(SpaceRules.BrakeAcceleration == SpaceRules.ThrustAcceleration * .5f,
+    "space braking is half as strong as acceleration");
+Check(SpaceRules.TorpedoDamage > SpaceRules.LaserDamage &&
+    SpaceRules.TorpedoFuelSeconds > 0f && SpaceRules.TorpedoCoastSeconds > 0f,
+    "torpedoes hit harder and coast after fuel runs out");
+var duelEnergy = new EnergyReserve();
+Check(duelEnergy.TrySpend(SpaceRules.LaserEnergyCost) &&
+    duelEnergy.Current == SpaceRules.MaximumEnergy - SpaceRules.LaserEnergyCost,
+    "laser firing uses ship energy");
+Check(duelEnergy.SpendContinuous(SpaceRules.ThrustEnergyPerSecond, 4f) < 1f &&
+    duelEnergy.Current == 0f && !duelEnergy.TrySpend(SpaceRules.TorpedoEnergyCost),
+    "acceleration drains the reserve and prevents firing when empty");
+duelEnergy.Recharge(2f);
+Check(duelEnergy.Current > SpaceRules.TorpedoEnergyCost &&
+    duelEnergy.TrySpend(SpaceRules.TorpedoEnergyCost), "energy recharges and funds another torpedo");
+var duelScore = new DuelScore();
+for (var kill = 0; kill < 9; kill++)
+    Check(!duelScore.RecordKill(0), $"space kill {kill + 1} does not end match");
+Check(duelScore.RecordKill(0) && duelScore.Winner == 0 && duelScore.Kills(0) == 10,
+    "tenth space kill ends match for the winner");
+Check(!duelScore.RecordKill(1) && duelScore.Kills(1) == 0,
+    "space score freezes after victory");
 Check(registry.Get("tank-arena").ScenePath.EndsWith("TankArena.tscn"), "registered game has entry scene");
+Check(registry.Get("space-duel").ScenePath.EndsWith("SpaceDuel.tscn"),
+    "Space Duel appears in the Game Box launcher");
 Check(registry.Get("construction-site").ScenePath.EndsWith("ConstructionSite.tscn"),
     "construction minigame has entry scene");
 Check(registry.Get("word-mission").ScenePath.EndsWith("WordMission.tscn"),

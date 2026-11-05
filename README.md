@@ -1,6 +1,6 @@
 # Game Box
 
-A small game collection for a child, built with **Godot 4.6.3 .NET** and C#. The launcher offers **Tank Arena**, **Gravemaskine-plads**, and **Ordmission**.
+A small game collection for a child, built with **Godot 4.6.3 .NET** and C#. The launcher offers **Tank Arena**, **Gravemaskine-plads**, **Ordmission**, and **Space Duel**.
 
 On the first launch, Game Box asks for the child's name. It saves the name locally with game progress in `user://game_box_state.json` and greets the child on later launches without asking again. The name is never sent to a server.
 
@@ -54,12 +54,27 @@ Choose **Opgave: Fyld lastbilen** or **Fri leg** from the game's opening menu. I
 
 Move close to the glowing work area before clicking. A large red circle marks the truck while the bucket holds soil; the bed turns green when the bucket is over it and ready to unload. The arm and bucket animate automatically; there are no separate hydraulic controls. The pause and success screens offer restart and return to the Game Box.
 
+## Space Duel
+
+Choose **Solo mod computer** or **To spillere** from Space Duel's own menu. Solo randomly selects one of three simple AI behaviors. Each ship has eight health points and a rechargeable energy bar shared by movement and weapons. Momentum carries the ship after thrust stops; braking is half as strong as acceleration. Ships, lasers, and torpedoes wrap around all four arena edges. Lasers deal one damage, while guided torpedoes deal four. Torpedoes steer while they have fuel, then coast briefly and explode.
+
+| Action | Player 1 | Player 2 |
+| --- | --- | --- |
+| Accelerate / brake | W / S | Up / Down |
+| Rotate | A / D | Left / Right |
+| Fire laser | Space | Enter or numpad 0 |
+| Fire torpedo | Shift | + or numpad + |
+| Pause / resume | Esc | Esc |
+
+The first ship to ten kills wins. After a short finish sequence, the victory screen shows the winning ship and its shot, hit, speed, and energy statistics. Press **Enter** there to return to Space Duel's menu. The pause menu also offers a direct return to Game Box.
+
 ## Structure
 
 - `Core/`: launcher, registry and small persistent state saved under Godot's `user://` path.
 - `Games/TankArena/`: the independent Tank Arena entry scene and gameplay scripts.
 - `Games/ConstructionSite/`: the independent construction mission, excavator, soil pile, truck and effects.
 - `Games/WordMission/`: Ordmission's separate learning data, adaptive session generator, activities, parent controls, and optional recording hooks.
+- `Games/SpaceDuel/`: the space duel scene, controls, AI, movement, weapons, and victory flow.
 - `Shared/UI/`: visual controls used by the launcher and game.
 - `Shared/Audio/`: short original WAV effects for menus, engines, combat, construction interactions, warnings, and results.
 - `Tests/`: dependency-free console checks for plain C# game and app logic.
@@ -76,7 +91,7 @@ The starter data is in `Games/WordMission/Data/starter.json`. Its five example w
 
 Run `dotnet run --project Tests/GameBox.Tests.csproj`.
 
-For engine-level flow checks, run `Tests/LauncherSmoke.tscn`, `Tests/NamePromptSmoke.tscn`, `Tests/WordMissionSmoke.tscn`, `Tests/TankArenaSmoke.tscn` and `Tests/ConstructionSmoke.tscn` with Godot's `--headless` option. They quit with a nonzero code on failure. The Ordmission check completes all nine activities, exercises assistance, and reopens saved progress. The construction check performs the complete eight-load mission and verifies truck departure, pause, free play and saved completion.
+For engine-level flow checks, run `Tests/LauncherSmoke.tscn`, `Tests/NamePromptSmoke.tscn`, `Tests/WordMissionSmoke.tscn`, `Tests/TankArenaSmoke.tscn`, `Tests/ConstructionSmoke.tscn`, and `Tests/SpaceDuelSmoke.tscn` with Godot's `--headless` option. They quit with a nonzero code on failure. The Ordmission check completes all nine activities, exercises assistance, and reopens saved progress. The construction check performs the complete eight-load mission and verifies truck departure, pause, free play and saved completion. The Space Duel check verifies both modes, movement and energy, weapons, AI, match finish, and the return to its own menu.
 
 ## Current limitations
 
