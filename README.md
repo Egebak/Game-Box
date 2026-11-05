@@ -23,7 +23,7 @@ godot --headless --path . --export-release "Windows Desktop" "build/windows/Game
 
 Distribute the **entire** `build/windows` folder: `Game Box.exe`, `Game Box.pck`, and `data_GameBox_windows_x86_64/` must stay together. The exported game includes its .NET runtime, so players do not need the Godot editor or .NET SDK.
 
-The desktop viewport is designed at 1920×1080 and opens maximized, with a 1600×900 window size when restored. The canvas expands with the window while UI containers adapt to the available space.
+The desktop viewport is designed at 1920×1080 and opens maximized, with a 1600×900 window size when restored. The canvas renders directly at the display's resolution while UI containers adapt to the available space. The 3D games render at 125% of the window resolution before downsampling for sharper detail; Space Duel's vector shapes use smoothed edges.
 
 ## Tank Arena controls
 

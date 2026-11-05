@@ -705,8 +705,8 @@ public partial class SpaceDuel : Node2D
             if (laser.Alive) DrawWrapped(laser.Position, point =>
             {
                 var direction = laser.Velocity.Normalized();
-                DrawLine(point - direction * 22f, point + direction * 7f, new Color("#e32430"), 10f);
-                DrawLine(point - direction * 18f, point + direction * 8f, new Color("#ffb0a0"), 4f);
+                DrawLine(point - direction * 22f, point + direction * 7f, new Color("#e32430"), 10f, true);
+                DrawLine(point - direction * 18f, point + direction * 8f, new Color("#ffb0a0"), 4f, true);
             });
         foreach (var torpedo in _torpedoes)
         {
@@ -715,7 +715,7 @@ public partial class SpaceDuel : Node2D
             {
                 if (torpedo.Trail[i].DistanceTo(torpedo.Trail[i - 1]) > 70f) continue;
                 var alpha = (float)i / torpedo.Trail.Count * .55f;
-                DrawLine(torpedo.Trail[i - 1], torpedo.Trail[i], new Color(1f, .42f, .17f, alpha), 9f);
+                DrawLine(torpedo.Trail[i - 1], torpedo.Trail[i], new Color(1f, .42f, .17f, alpha), 9f, true);
             }
             DrawWrapped(torpedo.Position, point => DrawTorpedo(point, torpedo));
         }
@@ -738,21 +738,21 @@ public partial class SpaceDuel : Node2D
         var progress = burst.Age / burst.Lifetime;
         var alpha = 1f - progress;
         DrawCircle(point, burst.Radius * (.2f + progress),
-            new Color(burst.Color.R, burst.Color.G, burst.Color.B, .18f * alpha));
+            new Color(burst.Color.R, burst.Color.G, burst.Color.B, .18f * alpha), true, -1f, true);
         DrawArc(point, burst.Radius * (.3f + progress), 0f, Mathf.Tau, 28,
-            new Color(burst.Color.R, burst.Color.G, burst.Color.B, .85f * alpha), 5f);
+            new Color(burst.Color.R, burst.Color.G, burst.Color.B, .85f * alpha), 5f, true);
     }
 
     private void DrawTorpedo(Vector2 position, Torpedo torpedo)
     {
         DrawSetTransform(position, torpedo.Angle, Vector2.One);
-        DrawColoredPolygon(new[] { new Vector2(16f, 0f), new Vector2(-10f, -8f),
+        DrawSmoothPolygon(new[] { new Vector2(16f, 0f), new Vector2(-10f, -8f),
             new Vector2(-13f, 8f) }, new Color("#d8e8ec"));
-        DrawLine(new Vector2(-8f, 0f), new Vector2(7f, 0f), new Color("#ff8a69"), 3f);
+        DrawLine(new Vector2(-8f, 0f), new Vector2(7f, 0f), new Color("#ff8a69"), 3f, true);
         if (torpedo.Fuel > 0f)
         {
             var length = 15f + 9f * Mathf.Sin(_clock * 29f);
-            DrawColoredPolygon(new[] { new Vector2(-12f, -5f), new Vector2(-12f - length, 0f),
+            DrawSmoothPolygon(new[] { new Vector2(-12f, -5f), new Vector2(-12f - length, 0f),
                 new Vector2(-12f, 5f) }, new Color(1f, .43f, .13f, .85f));
         }
         DrawSetTransform(Vector2.Zero);
@@ -765,18 +765,25 @@ public partial class SpaceDuel : Node2D
         if (thrusting)
         {
             var flame = 17f + 8f * Mathf.Sin(_clock * 24f + index);
-            DrawColoredPolygon(new[] { new Vector2(-24f, -9f), new Vector2(-24f - flame, 0f),
+            DrawSmoothPolygon(new[] { new Vector2(-24f, -9f), new Vector2(-24f - flame, 0f),
                 new Vector2(-24f, 9f) }, new Color(1f, .52f, .2f, .82f));
         }
-        DrawColoredPolygon(new[] { new Vector2(-25f, -16f), new Vector2(4f, -15f),
+        DrawSmoothPolygon(new[] { new Vector2(-25f, -16f), new Vector2(4f, -15f),
             new Vector2(29f, 0f), new Vector2(4f, 15f), new Vector2(-25f, 16f),
             new Vector2(-15f, 0f) }, color);
-        DrawColoredPolygon(new[] { new Vector2(-17f, -10f), new Vector2(4f, -10f),
+        DrawSmoothPolygon(new[] { new Vector2(-17f, -10f), new Vector2(4f, -10f),
             new Vector2(20f, 0f), new Vector2(4f, 10f), new Vector2(-17f, 10f) },
             new Color("#162b48"));
-        DrawLine(new Vector2(-18f, -17f), new Vector2(7f, -17f), color.Lightened(.3f), 3f);
-        DrawLine(new Vector2(-18f, 17f), new Vector2(7f, 17f), color.Lightened(.3f), 3f);
-        DrawCircle(new Vector2(2f, 0f), 6f, new Color("#b6f7ff"));
+        DrawLine(new Vector2(-18f, -17f), new Vector2(7f, -17f), color.Lightened(.3f), 3f, true);
+        DrawLine(new Vector2(-18f, 17f), new Vector2(7f, 17f), color.Lightened(.3f), 3f, true);
+        DrawCircle(new Vector2(2f, 0f), 6f, new Color("#b6f7ff"), true, -1f, true);
         DrawSetTransform(Vector2.Zero);
+    }
+
+    private void DrawSmoothPolygon(Vector2[] points, Color color)
+    {
+        DrawColoredPolygon(points, color);
+        DrawPolyline(points, color, 1.5f, true);
+        DrawLine(points[^1], points[0], color, 1.5f, true);
     }
 }
