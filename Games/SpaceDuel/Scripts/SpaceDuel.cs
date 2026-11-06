@@ -425,10 +425,17 @@ public partial class SpaceDuel : Node2D
                 var target = _ships[1 - torpedo.Owner];
                 if (!target.Destroyed)
                 {
-                    var desired = ShortestOffset(torpedo.Position, target.Position).Angle();
-                    var correction = Mathf.Clamp(Mathf.AngleDifference(torpedo.Angle, desired),
+                    var aim = SpaceRules.TorpedoInterceptOffset(
+                        torpedo.Position.X, torpedo.Position.Y, torpedo.Velocity.Length(), torpedo.Fuel,
+                        target.Position.X, target.Position.Y, target.Velocity.X, target.Velocity.Y,
+                        _arenaSize.X, _arenaSize.Y);
+                    var desired = new Vector2(aim.X, aim.Y).Angle();
+                    var heading = torpedo.Velocity.LengthSquared() > 1f
+                        ? torpedo.Velocity.Angle() : torpedo.Angle;
+                    var correction = Mathf.Clamp(Mathf.AngleDifference(heading, desired),
                         -SpaceRules.TorpedoTurnSpeed * delta, SpaceRules.TorpedoTurnSpeed * delta);
-                    torpedo.Angle += correction;
+                    torpedo.Velocity = torpedo.Velocity.Rotated(correction);
+                    torpedo.Angle = heading + correction;
                 }
                 var forward = new Vector2(Mathf.Cos(torpedo.Angle), Mathf.Sin(torpedo.Angle));
                 torpedo.Velocity = (torpedo.Velocity + forward * SpaceRules.TorpedoAcceleration * delta)

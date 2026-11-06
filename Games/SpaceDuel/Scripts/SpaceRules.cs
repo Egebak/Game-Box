@@ -23,7 +23,7 @@ public static class SpaceRules
     public const float TorpedoLaunchSpeed = 225f;
     public const float TorpedoAcceleration = 190f;
     public const float TorpedoMaximumSpeed = 500f;
-    public const float TorpedoTurnSpeed = 7f;
+    public const float TorpedoTurnSpeed = 14f;
     public const float TorpedoFuelSeconds = 3.84f;
     public const float TorpedoCoastSeconds = 1.6f;
 
@@ -38,6 +38,73 @@ public static class SpaceRules
         if (extent <= 0f) throw new ArgumentOutOfRangeException(nameof(extent));
         var delta = Wrap(to - from, extent);
         return delta > extent * .5f ? delta - extent : delta;
+    }
+
+    // Return an unwrapped offset to the earliest reachable intercept of a coasting ship.
+    // Each neighboring copy of the target is considered because the arena wraps.
+    public static (float X, float Y) TorpedoInterceptOffset(
+        float missileX, float missileY, float missileSpeed, float fuel,
+        float targetX, float targetY, float targetVelocityX, float targetVelocityY,
+        float width, float height)
+    {
+        var fallbackX = WrappedDelta(missileX, targetX, width);
+        var fallbackY = WrappedDelta(missileY, targetY, height);
+        var bestTime = float.PositiveInfinity;
+        var aimX = fallbackX;
+        var aimY = fallbackY;
+        var flightTime = Math.Max(0f, fuel) + TorpedoCoastSeconds;
+        const float sampleSeconds = .08f;
+
+        for (var imageX = -1; imageX <= 1; imageX++)
+        for (var imageY = -1; imageY <= 1; imageY++)
+        {
+            var offsetX = targetX + imageX * width - missileX;
+            var offsetY = targetY + imageY * height - missileY;
+            var previousTime = 0f;
+            for (var time = sampleSeconds; time <= flightTime + sampleSeconds; time += sampleSeconds)
+            {
+                var currentTime = Math.Min(time, flightTime);
+                var separationX = offsetX + targetVelocityX * currentTime;
+                var separationY = offsetY + targetVelocityY * currentTime;
+                var travel = TorpedoTravelDistance(missileSpeed, fuel, currentTime);
+                if (separationX * separationX + separationY * separationY > travel * travel)
+                {
+                    previousTime = currentTime;
+                    continue;
+                }
+
+                var low = previousTime;
+                var high = currentTime;
+                for (var refinement = 0; refinement < 8; refinement++)
+                {
+                    var middle = (low + high) * .5f;
+                    var x = offsetX + targetVelocityX * middle;
+                    var y = offsetY + targetVelocityY * middle;
+                    var distance = TorpedoTravelDistance(missileSpeed, fuel, middle);
+                    if (x * x + y * y > distance * distance) low = middle;
+                    else high = middle;
+                }
+                if (high < bestTime)
+                {
+                    bestTime = high;
+                    aimX = offsetX + targetVelocityX * high;
+                    aimY = offsetY + targetVelocityY * high;
+                }
+                break;
+            }
+        }
+        return (aimX, aimY);
+    }
+
+    private static float TorpedoTravelDistance(float speed, float fuel, float seconds)
+    {
+        speed = Math.Clamp(speed, 0f, TorpedoMaximumSpeed);
+        var powered = Math.Min(seconds, Math.Max(0f, fuel));
+        var accelerating = Math.Min(powered, (TorpedoMaximumSpeed - speed) / TorpedoAcceleration);
+        var distance = speed * accelerating + .5f * TorpedoAcceleration * accelerating * accelerating;
+        var coastSpeed = speed + TorpedoAcceleration * accelerating;
+        distance += coastSpeed * (seconds - accelerating);
+        return distance;
     }
 }
 

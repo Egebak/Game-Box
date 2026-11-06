@@ -130,6 +130,20 @@ Check(Math.Abs(SpaceRules.TorpedoFuelSeconds - 3.2f * 1.2f) < .001f &&
 Check(SpaceRules.TorpedoDamage > SpaceRules.LaserDamage &&
     SpaceRules.TorpedoFuelSeconds > 0f && SpaceRules.TorpedoCoastSeconds > 0f,
     "torpedoes hit harder and coast after fuel runs out");
+var movingIntercept = SpaceRules.TorpedoInterceptOffset(
+    100f, 100f, SpaceRules.TorpedoLaunchSpeed, SpaceRules.TorpedoFuelSeconds,
+    700f, 100f, 0f, 100f, 1920f, 1080f);
+Check(movingIntercept.X > 590f && movingIntercept.X < 610f &&
+    movingIntercept.Y > 140f && movingIntercept.Y < 190f,
+    "torpedo leads a coasting target to its predicted arrival position");
+var wrappedIntercept = SpaceRules.TorpedoInterceptOffset(
+    1850f, 300f, SpaceRules.TorpedoLaunchSpeed, SpaceRules.TorpedoFuelSeconds,
+    80f, 300f, 100f, 0f, 1920f, 1080f);
+Check(wrappedIntercept.X > 150f && wrappedIntercept.X < 300f &&
+    Math.Abs(wrappedIntercept.Y) < 1f,
+    "torpedo predicts an intercept across the wrapped arena edge");
+Check(SpaceRules.TorpedoTurnSpeed >= 12f,
+    "torpedo can turn sharply toward its intercept");
 var duelEnergy = new EnergyReserve();
 Check(duelEnergy.TrySpend(SpaceRules.LaserEnergyCost) &&
     duelEnergy.Current == SpaceRules.MaximumEnergy - SpaceRules.LaserEnergyCost,

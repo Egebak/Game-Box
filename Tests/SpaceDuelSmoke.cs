@@ -119,6 +119,20 @@ public partial class SpaceDuelSmoke : Node
 
             duel.ReturnToMenu();
             duel.StartMatch(true);
+            duel._PhysicsProcess(1.3);
+            duel.PlaceShipForTest(0, new Vector2(300f, 300f), Vector2.Zero);
+            duel.PlaceShipForTest(1, new Vector2(850f, 300f), new Vector2(0f, 150f));
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Shift, Pressed = true });
+            for (var i = 0; i < 4 && duel.TorpedoesFired(0) == 0; i++)
+                await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Shift, Pressed = false });
+            for (var i = 0; i < 240 && duel.ShipHealth(1) == SpaceRules.ShipHealth; i++)
+                duel._PhysicsProcess(1f / 60f);
+            Check(duel.ShipHealth(1) == SpaceRules.ShipHealth - SpaceRules.TorpedoDamage,
+                "torpedo leads and hits a ship coasting across its launch path");
+
+            duel.ReturnToMenu();
+            duel.StartMatch(true);
             var start = duel.ShipPosition(0);
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.W, Pressed = true });
             for (var i = 0; i < 25; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
